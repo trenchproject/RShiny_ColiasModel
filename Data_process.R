@@ -9,7 +9,7 @@ array <- readRDS("lambda1_ccsm4.rds")
 
 # To get desired data from this array, use array[year, cell, abs, gen, category], 
 # where year is stored as 1-150 that correspond to 1950-2099,
-#       cell corresponds to the row number of points,
+#       cell corresponds to the row number of the points file,
 #       abs is the absorptivity stored as 1-7 that corresponds to (0.4, 0.45. 0.5, 0.55, 0.6, 0.65, 0.7),
 #       gen is the generation 1-3,
 #       category is the metric of the data stored. 1: Population growth rate 
@@ -30,13 +30,21 @@ for (year in 1:150) {
       eggV <- array[year, , abs, gen, 3]
       Tb <- array[year, , abs, gen, 4]
       df <- cbind(points, lambda, fat, eggV, Tb) 
-      colnames(df)[5:8] <- c("lambda", "FAT", "egg viabililty", "body temp")
-      df$year <- year + 1949
-      df$absorptivity <- aseq[abs]
-      df$generation <- gen
+      colnames(df)[5:8] <- c("lambda", "FAT", "eggV", "temp")
+      df$year <- year + 1949   # year 1 corresponds to 1950
+      df$absorp <- aseq[abs]
+      df$gen <- gen
       complete <- rbind(complete, df)
     }
   }
 }
 
 saveRDS(complete[-1,], file = "Colias_complete.rds")
+
+
+av.Colias <- Colias %>% 
+  group_by(year, absorp, gen) %>% na.omit() %>% 
+  summarise(av.lambda = mean(lambda), av.FAT = mean(FAT), av.eggV = mean(eggV), av.temp = mean(temp))
+
+write.csv(av.Colias, file = "av.Colias.csv")
+
