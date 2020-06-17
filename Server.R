@@ -47,22 +47,36 @@ shinyServer <- function(input, output, session) {
 
   
   data <- reactive({
-    df <- Colias %>% filter(year == input$year & absorp %in% input$abs & gen %in% input$gen)
+    df <- Colias %>% filter(year == input$year & absorp %in% input$abs & gen %in% input$gen) %>% na.omit()
     df[,c("lat", "lon", paste(shortName[input$metric]))] %>% na.omit()
   })
 
+  output$mymap <- renderPlot({
+  ggplot() +
+    borders(fill="grey",colour="black") +
+    xlab("Longitude (°)") + ylab("Latitude (°)") +
+    geom_raster(data=data(), aes_string(x = "lon", y = "lat", fill = shortName[input$metric])) +
+    coord_quickmap(xlim = c(min(data()$lon), max(data()$lon)), ylim = c(min(data()$lat), max(data()$lat)), expand = TRUE) +
+    scale_fill_gradientn(name = input$metric, colors = viridis(12)) +
+    theme_bw( ) + theme(strip.text = element_text(size = 12)) + theme(plot.title = element_text(hjust = 0.5)) +
+    #theme(plot.background = element_rect(fill = "#F5F5F5"), panel.background = element_rect(fill = "#F5F5F5")) +
+    theme(plot.title = element_text(size = 18), axis.text = element_text(size = 12), axis.title = element_text(size = 14), legend.text = element_text(size = 12),
+          legend.title = element_text(size = 12))
+  })
 
-  output$mymap <- renderLeaflet({
+  
+  output$mymap2 <- renderLeaflet({
     filtered <- data()
+
     coordinates(filtered)=~lon+lat
     proj4string(filtered)=CRS("+init=epsg:4326") # set it to lat-long
     gridded(filtered) = TRUE
     dfRaster <- raster(filtered)
     mapStates = map("state", fill = TRUE, plot = FALSE)
-    
+
     pal <- colorNumeric(c("#0C2C84", "#41B6C4", "#FFFFCC"), values(dfRaster),
                         na.color = "transparent")
-    
+
     leaflet(data = mapStates) %>%
       addProviderTiles(providers$OpenTopoMap) %>%
       setView(lng = (min(Colias$lon) + max(Colias$lon)) / 2, lat = (min(Colias$lat) + max(Colias$lat)) / 2, zoom = 6) %>%
