@@ -40,11 +40,3 @@ for (year in 1:150) {
 }
 
 saveRDS(complete[-1,], file = "Colias_complete.rds")
-
-
-av.Colias <- Colias %>% 
-  group_by(year, absorp, gen) %>% na.omit() %>% 
-  summarise(av.lambda = mean(lambda), av.FAT = mean(FAT), av.eggV = mean(eggV), av.temp = mean(temp))
-
-write.csv(av.Colias, file = "av.Colias.csv")
-

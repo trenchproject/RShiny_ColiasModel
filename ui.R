@@ -1,5 +1,30 @@
-packages <- c("shiny", "magrittr", "ggplot2", "dplyr", "leaflet", "ggmap", "maps", "raster", "sp", "rgdal", "viridis", "shinysky", "shinythemes", "shinyWidgets", "shinycssloaders", "shinyjs", "colorRamps")
-lapply(packages, library, character.only = TRUE)
+packages <- c("shiny", "magrittr", "ggplot2", "dplyr", "leaflet", "ggmap", "maps", "raster", "sp", "rgdal", "viridis", "shinythemes", "shinyWidgets", "shinycssloaders", "shinyjs", "colorRamps")
+package.check <- lapply(
+  packages,
+  FUN = function(x) {
+    if (!require(x, character.only = TRUE)) {
+      install.packages(x, dependencies = TRUE)
+      library(x, character.only = TRUE)
+    }
+  }
+)
+
+
+coltags<-
+  lapply(
+    c("Year", "Elevation", "Absorptivity", "Generation"),
+    function(co) {
+      tag(
+        "p",
+        list(
+          class = class(co),
+          tags$span(class = "glyphicon glyphicon-move"),
+          tags$strong(co)
+        )
+      )
+    }
+  )
+
 
 Colias <- readRDS("Colias_complete.rds")
 
@@ -13,36 +38,101 @@ shinyUI <- fluidPage(
   ),
   hr(),
   
-  h3("Model description"),
-  p("This application uses a biophysical model that was adapted from Buckley and Kingsolver (2019), 
-  which is a combination of microclimate, developmental, biophysical, demographic and evolutionary models."),
-  tabsetPanel(type = "tabs",
+  includeHTML("intro.html"),
+  
+  tabsetPanel(type = "tabs", id = "tabs",
               tabPanel("Map",
                       sidebarLayout(
                         sidebarPanel(
+                          h4("For leaflet"),
                           sliderInput("year", "Year", min = 1950, max = 2099, value = 1999),
                           selectInput("abs", "Wing absorptivity", choices = seq(0.4, 0.7, 0.05)),
                           selectInput("gen", "Generation", choices = c(1, 2, 3)),
-                          radioButtons("metric", "Metric to plot", choices = c("Population growth rate", "Flight activity time (s)", "Egg viability (%)", "Body temperature (°C)")),
-                          
+                          radioButtons("metric", "Metric to plot", choices = c("Population growth rate", "Flight activity time (s)", "Egg viability (%)", "Body temperature (°C)"))
+                        ),
+                        mainPanel(
+                          h4("Leaflet"),
+                          leafletOutput("mymap") %>% withSpinner(type = 7)
+                        )
+                      ),
+                      
+                      sidebarLayout(
+                        sidebarPanel(
+                          h4("For ggplot"),
+                          radioButtons("metric_gg", "Metric to plot", choices = c("Population growth rate", "Flight activity time (s)", "Egg viability (%)", "Body temperature (°C)")),
+                          radioButtons("facet_gg", "Facets", choices = c("Wing absorptivity" = "absorp", "Generation" = "gen")),
+                          sliderInput("year_gg", "Year", min = 1950, max = 2099, value = 1999),
+                          selectInput("abs_gg", "Wing absorptivity", choices = seq(0.4, 0.7, 0.05), multiple = TRUE, selected = 0.4),
+                          selectInput("gen_gg", "Generation", choices = c(1, 2, 3), multiple = TRUE, selected = 1)
                         ),
                         mainPanel(
                           h4("ggplot"),
-                          plotOutput("mymap") %>% withSpinner(type = 7),
-                          hr(),
-                          h4("leaflet"),
-                          leafletOutput("mymap2") %>% withSpinner(type = 7)
+                          plotOutput("mymap_gg") %>% withSpinner(type = 7)
                         )
                       )
               ),
               tabPanel("Plot",
                        sidebarLayout(
                          sidebarPanel(
-                           selectInput("xaxis", "X axis", choices = c("Elevation" = "elev", "Year" = "year")),
-                           radioButtons("yaxis", "Y axis", choices = c("Population growth rate", "Flight activity time (s)", "Egg viability (%)", "Body temperature (°C)")),
-                           selectInput("color", "Color by", choices = c("Year", "Generation", "Absorptivity")),
-                           uiOutput(outputId = 'axisInput'),
-                           checkboxInput("trendline", "Show Trendline")
+                           fluidRow(
+
+                             column(6,
+                               tags$div(
+                                 class = "panel panel-default",
+                                 tags$div(class = "panel-heading", "Variables"),
+                                 tags$div(
+                                   class = "panel-body",
+                                   id = "sort1",
+                                   coltags
+                                 )
+                               
+                               ),
+                               radioButtons("yaxis", "Y axis", choices = c("Population growth rate", "Flight activity time (s)", "Egg viability (%)", "Body temperature (°C)"))
+                               
+                             ),
+                             column(5,
+                               tags$div(
+                                 class = "panel panel-default",
+                                 tags$div(
+                                   class = "panel-heading",
+                                   tags$span(class = "glyphicon glyphicon-stats"),
+                                   "x axis (Year or Elevation)"
+                                 ),
+                                 tags$div(
+                                   class = "panel-body",
+                                   id = "sort2"
+                                 )
+                               ),
+
+                               tags$div(
+                                 class = "panel panel-default",
+                                 tags$div(
+                                   class = "panel-heading",
+                                   tags$span(class = "glyphicon glyphicon-stats"),
+                                   "Color (or drag nothing for no color)"
+                                 ),
+                                 tags$div(
+                                   class = "panel-body",
+                                   id = "sort3"
+                                 )
+                               ),
+
+                               tags$div(
+                                 class = "panel panel-default",
+                                 tags$div(
+                                   class = "panel-heading",
+                                   tags$span(class = "glyphicon glyphicon-stats"),
+                                   "Facets (except for Elevation)"
+                                 ),
+                                 tags$div(
+                                   class = "panel-body",
+                                   id = "sort4"
+                                 )
+                               )
+                             )),
+
+                             uiOutput(outputId = 'widgetInput'),
+                             checkboxInput("trendline", "Show Trendline")
                          ),
                          mainPanel(
                            plotOutput("plot") %>% withSpinner(type = 7)
@@ -50,5 +140,53 @@ shinyUI <- fluidPage(
                        )
                        
               )
+              
+  ),
+  sortable_js(
+    "sort1",
+    options = sortable_options(
+      group = list(
+        name = "sortGroup1",
+        put = TRUE
+      ),
+      sort = FALSE, 
+      onSort = sortable_js_capture_input("sort_vars")
+    )
+  ),
+  
+  sortable_js(
+    "sort2",
+    options = sortable_options(
+      group = list(
+        group = "sortGroup1",
+        put = htmlwidgets::JS("function (to) { return to.el.children.length < 1; }"),
+        pull = TRUE
+      ),
+      onSort = sortable_js_capture_input("sort_x")
+    )
+  ),
+  
+  sortable_js(
+    "sort3",
+    options = sortable_options(
+      group = list(
+        group = "sortGroup1",
+        put = htmlwidgets::JS("function (to) { return to.el.children.length < 1; }"),
+        pull = TRUE
+      ),
+      onSort = sortable_js_capture_input("sort_col")
+    )
+  ),
+  
+  sortable_js(
+    "sort4",
+    options = sortable_options(
+      group = list(
+        group = "sortGroup1",
+        put = htmlwidgets::JS("function (to) { return to.el.children.length < 1; }"),
+        pull = TRUE
+      ),
+      onSort = sortable_js_capture_input("sort_facet")
+    )
   )
 )
