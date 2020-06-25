@@ -40,6 +40,16 @@ shinyUI <- fluidPage(
   hr(),
   
   includeHTML("intro.html"),
+  sidebarLayout(
+    sidebarPanel(
+      selectInput("abs_intro", "Absorptivity", choices = seq(0.4, 0.7, 0.05))
+    ),
+    mainPanel(
+      plotOutput("plot_intro")
+    )
+  ),
+  
+  includeHTML("intro2.html"),
   
   tabsetPanel(type = "tabs", id = "tabs",
               tabPanel("Map",

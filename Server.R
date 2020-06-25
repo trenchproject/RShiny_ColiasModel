@@ -3,7 +3,28 @@ shortName = c("Population growth rate" = "lambda", "Flight activity time (s)" = 
 variables <- c("Year" = "year", "Absorptivity" = "absorp", "Generation" = "gen", "Elevation" = "elev")
 elevCat <- c("1392 ~ 1700", "1701 ~ 2000", "2001 ~ 2300", "2301 ~ 2600", "2601 ~ 2900", "2901 ~ 3198")
 
+# AOI = aoi_get(state = "CO")
+
+# p = getGridMET(AOI, param = c('tmax','tmin'), startDate = '2020-06-22', endDate = '2020-06-23')
+# 
+# p$tmax[[1]]$
+# p = getGridMET(AOI, param = c('tmax','tmin'), startDate = Sys.Date() - 3, endDate = Sys.Date() - 2)
+# 
+# r = raster::stack(p$tmax, p$tmin)
+# names(r) = c('tmax', 'tmin')
+# rasterVis::levelplot(r)
+# matrix <- rasterToPoints(r)
+
+
 shinyServer <- function(input, output, session) {
+  
+  
+  make_hourly_temps(47.5, df)
+  
+  
+  output$plot_intro <- renderPlot({
+    ggplot() + geom_line(data = , aes(x = , y = ))
+  })
   
   # widgets to show
   output$widgetInput <- renderUI({
