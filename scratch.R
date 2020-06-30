@@ -98,40 +98,90 @@ Tb_butterfly(25, 30, 20, 0.4, 600, 300, 30, 0.36, 1.46, 0.6, r_g=0.3, shade=TRUE
 
 
 
-ncdc_stations(token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq",
-              extent = c(min(Colias$lat),
-                         min(Colias$lon),
-                         max(Colias$lat),
-                         max(Colias$lon)
+ncdc_stations(limit = 100,
+              extent = c(min(Colias$lat)+1.5,
+                         min(Colias$lon)+1.5,
+                         max(Colias$lat)-1.5,
+                         max(Colias$lon)-1.5
                          
-                         ))
+                         ),
+              token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq")
+coops_search()
 
+ghcnd_search("GHCND:US1COGN0002", var = "TMAX")
+ncdc(stationid = "GHCND:US1COGN0002", token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", startdate = 2010-06-01, enddate = 2020-06-25)
+var <- ncdc_datasets("GHCND:US1COGN0002", token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq")
+
+tMin <- ghcnd_search(stationid = "USC00051959", token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", var = "TMIN", date_min = 2020-06-01)
+tMax <- ghcnd_search(stationid = "USC00051959", token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", var = "TMAX", date_min = 2020-06-01)
+
+tMax <- as.data.frame(tMax) %>% dplyr::select(c(tmax.tmax, tmax.date))
+tMin <- as.data.frame(tMin) %>% dplyr::select(c(tmin.tmin, tmin.date))
+as.data.frame(tMin)
+tMax <- filter(tMax, tmax.date > Sys.Date() - 9, tmax.date < Sys.Date() - 1)
+tMin <- filter(tMin, tmin.date > Sys.Date() - 9, tmin.date < Sys.Date() - 1)
+tMax
 MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq
 
+"2020-06-30" > "2020-06-29"
+tMax[16219,2]
+tMax1 <- ncdc(datasetid='GHCND',
+              stationid= "GHCND:USC00051959",
+              datatypeid= "TMAX",
+              startdate = 2020-06-01,
+              enddate = 2020-06-25,
+              limit=500,
+              token="MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq")
+tMax1$meta
 
-ncdc_stations(extent = c(47.5204, -122.2047, 47.6139, -122.1065), token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq")
+
+c(min(Colias$lat),
+  min(Colias$lon),
+  max(Colias$lat),
+  max(Colias$lon))
+
+max(Colias$lat)
+ncdc_stations(extent = c(47.5204, -122.2047, 47.6139, -122.1065), token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", limit = 100)
 Sys.Date()
 
 
 
 weather <- fix_weather(KA_weather)
+weather$weather
 make_hourly_temps(50.4,weather$weather)
 df <- data.frame("Year" = 2020, "Month" = 1, "Day" = c(1,2), "Tmin" = c(5,6), "Tmax" = c(12, 14))
 df
 
 
+
+Tb_butterfly()
 AOI = aoi_get(state = "CO")
 #Get temp raster stack for start_date
 #raster::plot(AOI)
-
+p = getGridMET(AOI, param = c('tmax','tmin'), startDate = '2020-06-22', endDate = '2020-06-23')
 r = raster::stack(p$tmax, p$tmin)
 names(r) = c('tmax', 'tmin')
 rasterVis::levelplot(r)
+df_CO <- rasterToPoints(r) %>% as.data.frame()
 
+df_filter <- filter(df_CO, x >= min(Colias$lon) & x <= max(Colias$lon) & y >= min(Colias$lat) & y <= max(Colias$lat))
+df_filter
+mTemp <- colMeans(df_filter)  %>% t() %>% as.data.frame()
 
+test <- cbind("Year" = 2020, "Month" = 6, "Day" = 22, mTemp)
+colnames(test)[c(6,8)] <- c("Tmax", "Tmin")
+test <- rbind(test, test)
+test
+test <- make_hourly_temps(47.6, test)
+
+make_hourly_temps
+class(mTemp)
 r$tmax
-
-
+mTemp
+test[1,11:34]
+test[2,11:34]
+plot(0:23, test[1,11:34])
+plot(0:23, test[2,11:34])
 install.packages("devtools")   
 library("devtools")   
 devtools::install_github(build_vignettes = TRUE,repo = "trenchproject/TrenchR")

@@ -1,4 +1,4 @@
-packages <- c("shiny", "magrittr", "ggplot2", "dplyr", "leaflet", "ggmap", "maps", "raster", "sp", "rgdal", "viridis", "shinythemes", "shinyWidgets", "shinycssloaders", "shinyjs", "colorRamps", "sortable")
+packages <- c("shiny", "magrittr", "ggplot2", "dplyr", "leaflet", "ggmap", "maps", "raster", "sp", "rgdal", "viridis", "shinythemes", "shinyWidgets", "shinycssloaders", "shinyjs", "colorRamps", "sortable", "rnoaa", "chillR", "reshape2")
 package.check <- lapply(
   packages,
   FUN = function(x) {
@@ -42,7 +42,8 @@ shinyUI <- fluidPage(
   includeHTML("intro.html"),
   sidebarLayout(
     sidebarPanel(
-      selectInput("abs_intro", "Absorptivity", choices = seq(0.4, 0.7, 0.05))
+      selectInput("abs_intro", "Absorptivity", choices = seq(0.4, 0.7, 0.05)),
+      selectInput("weather", "Weather", choices = c("Sunny", "Partially overcast", "Overcast"))
     ),
     mainPanel(
       plotOutput("plot_intro")

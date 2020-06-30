@@ -3,27 +3,71 @@ shortName = c("Population growth rate" = "lambda", "Flight activity time (s)" = 
 variables <- c("Year" = "year", "Absorptivity" = "absorp", "Generation" = "gen", "Elevation" = "elev")
 elevCat <- c("1392 ~ 1700", "1701 ~ 2000", "2001 ~ 2300", "2301 ~ 2600", "2601 ~ 2900", "2901 ~ 3198")
 
-# AOI = aoi_get(state = "CO")
 
-# p = getGridMET(AOI, param = c('tmax','tmin'), startDate = '2020-06-22', endDate = '2020-06-23')
-# 
-# p$tmax[[1]]$
-# p = getGridMET(AOI, param = c('tmax','tmin'), startDate = Sys.Date() - 3, endDate = Sys.Date() - 2)
-# 
-# r = raster::stack(p$tmax, p$tmin)
-# names(r) = c('tmax', 'tmin')
-# rasterVis::levelplot(r)
-# matrix <- rasterToPoints(r)
+tMin <- ghcnd_search(stationid = "USC00051959", token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", var = "TMIN")
+tMax <- ghcnd_search(stationid = "USC00051959", token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", var = "TMAX")
+
+tMax <- as.data.frame(tMax) %>% dplyr::select(c(tmax.tmax, tmax.date))
+tMin <- as.data.frame(tMin) %>% dplyr::select(c(tmin.tmin, tmin.date))
+
+tMax <- filter(tMax, tmax.date > Sys.Date() - 9, tmax.date < Sys.Date() - 1)
+
+tMin <- filter(tMin, tmin.date > Sys.Date() - 9, tmin.date < Sys.Date() - 1)
+colnames(tMin)[2] <- "tmax.date"
+
+temp <- merge(tMax, tMin, by = "tmax.date")
+temp[,c(2:3)] <- temp[,c(2:3)]/10
+temp$Year <- NA
+temp$Month <- NA
+temp$Day <- NA
+for (row in 1:dim(temp)[1]) {
+  temp$Year[row] <- strsplit(as.character(temp$tmax.date), "-")[[row]][1]
+  temp$Month[row] <- strsplit(as.character(temp$tmax.date), "-")[[row]][2]
+  temp$Day[row] <- strsplit(as.character(temp$tmax.date), "-")[[row]][3]
+}
+colnames(temp)[c(2,3)] <- c("Tmax", "Tmin")
+
+hourlyTemp <- make_hourly_temps(40, temp)
+hourlyTemp <- hourlyTemp[, c(8:31)] %>% t() %>% as.data.frame()
+
+hourlyTemp$Hour <- c(0:23)
+colnames(hourlyTemp) <- c(as.character(seq.Date(from = Sys.Date() - 8, to = Sys.Date() - 2, by = "1 day")), "Hour")
+
+combined <- melt(hourlyTemp, id.vars = "Hour")
+combined
+for(row in 1:dim(combined)[1]) {
+  combined$dateHour[row] <- paste0(combined$variable[row], " ", combined$Hour[row], ":00")
+}
+hours <- as.POSIXct(combined$dateHour, format="%Y-%m-%d %H:%M")
+combined$dateHour <- hours
+
+combined$value
+
+
+
+
+
+Tb_butterfly(T_a=25, Tg=25, Tg_sh=20, u=0.4, H_sdir=300, H_sdif=100, z=30, D=0.36, delta=1.46, alpha=0.6, r_g=0.3)
 
 
 shinyServer <- function(input, output, session) {
   
   
-  make_hourly_temps(47.5, df)
-  
-  
   output$plot_intro <- renderPlot({
-    ggplot() + geom_line(data = , aes(x = , y = ))
+    if (input$weather == "Sunny") {
+      H_sdir <- 900
+    } else if (input$weather == "Partially overcast") {
+      H_sdir <- 500
+    } else {
+      H_sdir <- 200
+    }
+    
+    Tb <- Tb_butterfly(combined$value, combined$value+5, Tg_sh = combined$value, u = 1, H_sdir = H_sdir, H_sdif = 400, z = 30, D=0.36, delta=1.46, alpha=as.numeric(input$abs_intro), r_g=0.3)
+    
+    ggplot() + geom_line(aes(x = combined$dateHour, y = combined$value), size = 1.3) + geom_line(aes(x = combined$dateHour, y = Tb), col = "blue", size = 1.3) +
+      xlab("Day") + ylab("Temperature (C)") + theme_bw() + ggtitle("Butterfly body temperatures") +
+      theme(plot.title = element_text(size = 18), axis.text = element_text(size = 12), axis.title = element_text(size = 14), legend.text = element_text(size = 12),
+            legend.title = element_text(size = 12))
   })
   
   # widgets to show
