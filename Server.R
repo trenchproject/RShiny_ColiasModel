@@ -3,6 +3,105 @@ shortName = c("Population growth rate" = "lambda", "Flight activity time (s)" = 
 variables <- c("Year" = "year", "Absorptivity" = "absorp", "Generation" = "gen", "Elevation" = "elev")
 elevCat <- c("1392 ~ 1700", "1701 ~ 2000", "2001 ~ 2300", "2301 ~ 2600", "2601 ~ 2900", "2901 ~ 3198")
 
+Tb_butterfly=function(T_a, Tg, Tg_sh, u, H_sdir, H_sdif, z, D, delta, alpha, r_g=0.3, shade=FALSE){
+  
+  stopifnot(u>=0, H_sdir>=0, H_sdif>=0, z>=-90, z<=90, D>0, delta>=0, alpha>=0, r_g>=0, r_g<=1, shade %in% c(FALSE, TRUE) )  
+  
+  TaK= T_a+273.15 #ambient temperature in K
+  TaK_sh=TaK
+  Tg= Tg+273.15 #ground surface temperature in K
+  Tg_sh= Tg_sh+273 #shaded ground surface temperature in K
+  
+  u= u *100;  #u- wind speed, convert m/s to cm/s
+  H_sdir=H_sdir/10 #divide by ten to convert W/m2 to W/cm2
+  H_sdif=H_sdif/10 #divide by ten to convert W/m2 to W/cm2
+  
+  #Total solar radiation
+  H_sttl= H_sdir + H_sdif
+  
+  #Butterfly Parameters
+  delta<- delta/10     #delta- thoracic fur thickness, cm
+  
+  epsilon_s=0.97; #surface emisivity, ranges from 0.95-1
+  sigma= 5.67*10^-9; #Stefan-Boltzman constant, mW cm^-2 K^04 or 5.67*10^-8 W m-2 K-4
+  Ep=1; #Ep- butterfly thermal emissivity
+  
+  k_e= 1.3; #k_e- thermal conductivity of the fur, 1.3mWcm^-1*K^-1
+  r_i=0.15; #r_i- body radius #Kingsolver 1983
+  k_a=0.25; #approximate thermal conductivity of air, mWcm^-1*K^-1
+  
+  v=15.68*10^-2  #cm^2/s, kinematic viscocity of air,  at 300K http://www.engineeringtoolbox.com/air-absolute-kinematic-viscosity-d_601.html
+  
+  #---------------------------------------------
+  
+  #Areas, cm^2
+  #Calculate total surface area as area of cylinder without ends
+  A_sttl= pi*D*2 #2 in length  #cm^2
+  
+  #For butterflies basking with wings perpendicular to radiation 
+  ##A_s,dir, A_s,ref, A_s,ttl- direct, reflected, and total solar radiative heat transfer surface areas 
+  A_sdir= A_sttl/2
+  A_sref=A_sdir
+  
+  #RADIATIVE HEAT FLUx, mW
+  Q_s= alpha*A_sdir*H_sdir/cos(z*pi/180)+alpha*A_sref*H_sdif+alpha*r_g*A_sref*H_sttl  
+  
+  #---------------------------------------------		 
+  #THERMAL RADIATIVE FLUX
+  #Tsky=0.0552*(TaK)^1.5; #Kelvin, black body sky temperature from Swinbank (1963), 
+  Tsky= (1.22*T_a -20.4)+273.15 #K, Gates 1980 Biophysical ecology based on Swnback 1960, Kingsolver (1983) estimates using Brunt equation
+  
+  #Q_t= 0.5* A_sttl * Ep * sigma * (Tb^4 - Tsky^4) +0.5* A_sttl * Ep * sigma * (Tb^4 - Tg^4)
+  
+  #---------------------------------------------   	               
+  # CONVECTIVE HEAT FLUX
+  
+  #Reynolds number- ratio of interval viscous forces
+  R_e=u*D/v
+  #Nusselt number- dimensionless conductance
+  N_u=0.6*R_e^0.5
+  #N_u=2.3; #Kingsolver 1983;
+  
+  h_c=N_u*k_a/D;
+  h_T=(1/h_c+(r_i+delta)*log((r_i+delta)/r_i)/k_e)^-1;  # h_T- total convective heat tranfer coefficient
+  #A_c=A_sttl; #A_c- convective heat transfer surface area
+  #Q_c= h_T* A_c* (Tb-T_a);     
+  #---------------------------------------------   	 
+  #HEAT BUDGET              
+  
+  # Kingsolver 1983
+  #Q_s- total radiative heat flux; Q_t- thermal radiative heat flux; Q_c- convective heat flux
+  #Q_s=Q_t + Q_c;
+  
+  #ADJUST PARAMETERS IF SHADE
+  if(shade==TRUE){
+    #Calculate without basking by dividing areas by two
+    A_sttl=A_sttl/2
+    #RADIATIVE HEAT FLUX IN SHADE, mW
+    A_sdir= A_sttl/2
+    A_sref=A_sdir; 
+    H_sdir_sh= 0; #No direct radiation
+    H_sdif_sh= H_sdif
+    H_sttl= H_sdif + H_sdif_sh #only diffuse and reflected
+    Q_s= alpha*A_sdir*H_sdir_sh/cos(z*pi/180)+alpha*A_sref*H_sdif_sh+alpha*r_g*A_sref*H_sttl; 
+    Tg= Tg_sh #use shaded surface temperature if shade
+  }
+  
+  #t solved in wolfram alpha #Solve[a t^4 +b t -d, t]
+  a<- A_sttl * Ep *sigma
+  b<-h_T * A_sttl
+  d<- h_T*A_sttl*TaK +0.5*A_sttl * Ep *sigma*Tsky^4 +0.5*A_sttl * Ep *sigma*(Tg)^4 +Q_s
+  
+  {Te=1/2*sqrt((2*b)/(a*sqrt((sqrt(3)*sqrt(256*a^3*d^3+27*a^2*b^4)+9*a*b^2)^(1/3)/(2^(1/3)*3^(2/3)*a)-(4*(2/3)^(1/3)*d)/(sqrt(3)*sqrt(256*a^3*d^3+27*a^2*b^4)+9*a*b^2)^(1/3)))-(sqrt(3)*sqrt(256*a^3*d^3+27*a^2*b^4)+9*a*b^2)^(1/3)/(2^(1/3)*3^(2/3)*a)+(4*(2/3)^(1/3)*d)/(sqrt(3)*sqrt(256*a^3*d^3+27*a^2*b^4)+9*a*b^2)^(1/3))-1/2*sqrt((sqrt(3)*sqrt(256*a^3*d^3+27*a^2*b^4)+9*a*b^2)^(1/3)/(2^(1/3)*3^(2/3)*a)-(4*(2/3)^(1/3)*d)/(sqrt(3)*sqrt(256*a^3*d^3+27*a^2*b^4)+9*a*b^2)^(1/3)) }
+  #IMPROVE SOLUTION?
+  
+  return(Te-273.15)
+} 
+
+day_of_year<- function(day, format="%Y-%m-%d"){
+  day=  as.POSIXlt(day, format=format)
+  return(as.numeric(strftime(day, format = "%j")))
+}
 
 tMin <- ghcnd_search(stationid = "USC00051959", token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", var = "TMIN")
 tMax <- ghcnd_search(stationid = "USC00051959", token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", var = "TMAX")
@@ -27,53 +126,60 @@ for (row in 1:dim(temp)[1]) {
 }
 colnames(temp)[c(2,3)] <- c("Tmax", "Tmin")
 
-hourlyTemp <- make_hourly_temps(40, temp)
+hourlyTemp <- make_hourly_temps(mean(Colias$lat), temp)
 hourlyTemp <- hourlyTemp[, c(8:31)] %>% t() %>% as.data.frame()
 
 hourlyTemp$Hour <- c(0:23)
 colnames(hourlyTemp) <- c(as.character(seq.Date(from = Sys.Date() - 8, to = Sys.Date() - 2, by = "1 day")), "Hour")
 
 combined <- melt(hourlyTemp, id.vars = "Hour")
-combined
+
 for(row in 1:dim(combined)[1]) {
   combined$dateHour[row] <- paste0(combined$variable[row], " ", combined$Hour[row], ":00")
 }
 hours <- as.POSIXct(combined$dateHour, format="%Y-%m-%d %H:%M")
 combined$dateHour <- hours
 
-combined$value
 
-
-
-
-
-Tb_butterfly(T_a=25, Tg=25, Tg_sh=20, u=0.4, H_sdir=300, H_sdif=100, z=30, D=0.36, delta=1.46, alpha=0.6, r_g=0.3)
 
 
 shinyServer <- function(input, output, session) {
   
-  
   output$plot_intro <- renderPlot({
     if (input$weather == "Sunny") {
       H_sdir <- 900
-    } else if (input$weather == "Partially overcast") {
+    } else if (input$weather == "Partially sunny") {
       H_sdir <- 500
     } else {
       H_sdir <- 200
     }
     
-    Tb <- Tb_butterfly(combined$value, combined$value+5, Tg_sh = combined$value, u = 1, H_sdir = H_sdir, H_sdif = 400, z = 30, D=0.36, delta=1.46, alpha=as.numeric(input$abs_intro), r_g=0.3)
+    seq <- rep(seq.Date(from = Sys.Date() - 8, to = Sys.Date() - 2, by = "1 day"), each = 24)
+    doy = day_of_year(seq)
+    hour = rep(0:23, times = 7)
+    z <- zenith_angle(doy= doy, lat = mean(Colias$lat), lon = mean(Colias$lon), hour= hour)
+    shade <- rep(FALSE, length(z))
+    for (i in 1:length(z)) {
+      if (z[i] == 90) {
+        shade[i] <- TRUE
+      }
+    }
+    colors <- c("Environmental \ntemperature" = "black", "Operative \ntemperature" = "blue")
     
-    ggplot() + geom_line(aes(x = combined$dateHour, y = combined$value), size = 1.3) + geom_line(aes(x = combined$dateHour, y = Tb), col = "blue", size = 1.3) +
-      xlab("Day") + ylab("Temperature (C)") + theme_bw() + ggtitle("Butterfly body temperatures") +
-      theme(plot.title = element_text(size = 18), axis.text = element_text(size = 12), axis.title = element_text(size = 14), legend.text = element_text(size = 12),
-            legend.title = element_text(size = 12))
+    Tb <- mapply(Tb_butterfly, 
+                 combined$value, combined$value+5, Tg_sh = combined$value-5, u = 1, H_sdir = H_sdir, H_sdif = 400, z = 30, D=0.36, delta=1.46, alpha=as.numeric(input$abs_intro), r_g=0.3, shade = shade)
+    
+    ggplot() + geom_line(aes(x = combined$dateHour, y = combined$value, color = "Environmental \ntemperature"), size = 1.3) + geom_line(aes(x = combined$dateHour, y = Tb, color = "Operative \ntemperature"), size = 1.3) +
+      xlab("Day") + ylab("Temperature (°C)") + theme_bw() + ggtitle("Colias body temperatures in the past week") +
+      scale_color_manual(values = colors) + 
+      theme(plot.title = element_text(size = 18), axis.text = element_text(size = 13), axis.title = element_text(size = 16), legend.text = element_text(size = 13), 
+            legend.title = element_blank())
   })
   
   # widgets to show
   output$widgetInput <- renderUI({
     validate(
-      need(input$sort_x, "")
+      need(input$sort_x == "Year" || input$sort_x == "Elevation", "")
     )
     genInput <- selectInput("genPlot", "Generation", choices = c(1, 2, 3), selected = 1, multiple = TRUE)
     absInput <- selectInput("absPlot", "Wing absorptivity", choices = seq(0.4, 0.7, 0.05), selected = 0.4, multiple = TRUE)
@@ -131,14 +237,21 @@ shinyServer <- function(input, output, session) {
   output$mymap_gg <- renderPlot({
     ggplot() +
       borders(fill="grey",colour="black") +
-      xlab("Longitude (°)") + ylab("Latitude (°)") + theme_bw( ) +
+      xlab("Longitude (°)") + ylab("Latitude (°)") + theme_bw( ) + 
       geom_raster(data = data_gg(), aes_string(x = "lon", y = "lat", fill = shortName[input$metric_gg])) +
       coord_quickmap(xlim = c(min(data_gg()$lon), max(data_gg()$lon)), ylim = c(min(data_gg()$lat), max(data_gg()$lat)), expand = TRUE) +
       scale_fill_gradientn(name = input$metric_gg, colors = viridis(12), na.value = "white") + facet_grid(as.formula(paste("~", input$facet_gg))) +
       theme(strip.text = element_text(size = 12)) + theme(plot.title = element_text(hjust = 0.5)) +
       #theme(plot.background = element_rect(fill = "#F5F5F5"), panel.background = element_rect(fill = "#F5F5F5")) +
       theme(plot.title = element_text(size = 18), axis.text = element_text(size = 12), axis.title = element_text(size = 14), legend.text = element_text(size = 12),
-            legend.title = element_text(size = 12))
+            legend.title = element_text(size = 12)) #+ geom_sf() #+ coord_sf(xlim = c(-102.15, -74.12), ylim = c(7.65, 33.97), expand = FALSE)
+  })
+  
+  output$topo <- renderLeaflet({
+    leaflet() %>%
+      addProviderTiles(providers$Stamen.Terrain) %>%
+      setView(lng = (min(Colias$lon) + max(Colias$lon)) / 2, lat = (min(Colias$lat) + max(Colias$lat)) / 2, zoom = 6) %>%
+      addRectangles(lng1 = min(Colias$lon), lng2 = max(Colias$lon), lat1 = min(Colias$lat), lat2 = max(Colias$lat))
   })
   
   # Data for plot when x axis is Year
@@ -203,7 +316,7 @@ shinyServer <- function(input, output, session) {
   
   output$plot <- renderPlot({
     validate(
-      need(input$sort_x, "Drag \"Year\" or \"Elevation\" to x")
+      need(input$sort_x == "Year" || input$sort_x == "Elevation", "Drag \"Year\" or \"Elevation\" to x axis")
     )
     if (!is.null(input$sort_col) && length(input$sort_col) != 0) {  # with color
       

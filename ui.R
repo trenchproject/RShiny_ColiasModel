@@ -1,4 +1,4 @@
-packages <- c("shiny", "magrittr", "ggplot2", "dplyr", "leaflet", "ggmap", "maps", "raster", "sp", "rgdal", "viridis", "shinythemes", "shinyWidgets", "shinycssloaders", "shinyjs", "colorRamps", "sortable", "rnoaa", "chillR", "reshape2")
+packages <- c("shiny", "magrittr", "ggplot2", "dplyr", "leaflet", "ggmap", "maps", "raster", "sp", "rgdal", "viridis", "shinythemes", "shinyWidgets", "shinycssloaders", "shinyjs", "colorRamps", "sortable", "rnoaa", "chillR", "reshape2", "rasterVis")
 package.check <- lapply(
   packages,
   FUN = function(x) {
@@ -8,8 +8,6 @@ package.check <- lapply(
     }
   }
 )
-
-
 
 coltags<-
   lapply(
@@ -29,9 +27,11 @@ coltags<-
 
 Colias <- readRDS("Colias_complete.rds")
 
+
+
 shinyUI <- fluidPage(
   theme = shinytheme("united"),
-  setBackgroundColor(color = "#F5F5F5"),                   
+  setBackgroundColor(color = "#F5F5F5"), 
   useShinyjs(),
   titlePanel(
     div(tags$img(src="Butterfly_icon.png", height = 50), 
@@ -40,13 +40,16 @@ shinyUI <- fluidPage(
   hr(),
   
   includeHTML("intro.html"),
+  br(),
+  h4("Quick glance at Colias body temperatures"),
   sidebarLayout(
     sidebarPanel(
-      selectInput("abs_intro", "Absorptivity", choices = seq(0.4, 0.7, 0.05)),
-      selectInput("weather", "Weather", choices = c("Sunny", "Partially overcast", "Overcast"))
+      selectInput("abs_intro", "Wing absorptivity", choices = seq(0.4, 0.7, 0.05)),
+      selectInput("weather", "Weather", choices = c("Sunny", "Partially sunny", "Overcast"))
     ),
     mainPanel(
-      plotOutput("plot_intro")
+      plotOutput("plot_intro") %>% withSpinner(type = 7),
+      p("*the plot assumes butterfly body temperature in sun and wind speed = 1 m/s")
     )
   ),
   
@@ -79,7 +82,8 @@ shinyUI <- fluidPage(
                         ),
                         mainPanel(
                           h4("ggplot"),
-                          plotOutput("mymap_gg") %>% withSpinner(type = 7)
+                          plotOutput("mymap_gg") %>% withSpinner(type = 7),
+                          leafletOutput("topo")
                         )
                       )
               ),
@@ -121,7 +125,7 @@ shinyUI <- fluidPage(
                                  tags$div(
                                    class = "panel-heading",
                                    tags$span(class = "glyphicon glyphicon-stats"),
-                                   "Color (or drag nothing for no color)"
+                                   "Color"
                                  ),
                                  tags$div(
                                    class = "panel-body",
@@ -134,7 +138,7 @@ shinyUI <- fluidPage(
                                  tags$div(
                                    class = "panel-heading",
                                    tags$span(class = "glyphicon glyphicon-stats"),
-                                   "Facets (except for Elevation)"
+                                   "Facets"
                                  ),
                                  tags$div(
                                    class = "panel-body",

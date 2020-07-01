@@ -2,6 +2,19 @@ Tb_butterfly=function(T_a, Tg, Tg_sh, u, H_sdir, H_sdif, z, D, delta, alpha, r_g
   
   stopifnot(u>=0, H_sdir>=0, H_sdif>=0, z>=-90, z<=90, D>0, delta>=0, alpha>=0, r_g>=0, r_g<=1, shade %in% c(FALSE, TRUE) )  
   
+  # T_a = 20
+  # Tg = 25 
+  # Tg_sh = 15
+  # u = 1 
+  # H_sdir = 900
+  # H_sdif = 400
+  # z = seq(0, 90, by = 10)
+  # z = 90
+  # D =  0.36
+  # delta = 1.46
+  # alpha = 0.6
+  # r_g=0.3
+  
   TaK= T_a+273.15 #ambient temperature in K
   TaK_sh=TaK
   Tg= Tg+273.15 #ground surface temperature in K
@@ -89,12 +102,12 @@ Tb_butterfly=function(T_a, Tg, Tg_sh, u, H_sdir, H_sdif, z, D, delta, alpha, r_g
   
   {Te=1/2*sqrt((2*b)/(a*sqrt((sqrt(3)*sqrt(256*a^3*d^3+27*a^2*b^4)+9*a*b^2)^(1/3)/(2^(1/3)*3^(2/3)*a)-(4*(2/3)^(1/3)*d)/(sqrt(3)*sqrt(256*a^3*d^3+27*a^2*b^4)+9*a*b^2)^(1/3)))-(sqrt(3)*sqrt(256*a^3*d^3+27*a^2*b^4)+9*a*b^2)^(1/3)/(2^(1/3)*3^(2/3)*a)+(4*(2/3)^(1/3)*d)/(sqrt(3)*sqrt(256*a^3*d^3+27*a^2*b^4)+9*a*b^2)^(1/3))-1/2*sqrt((sqrt(3)*sqrt(256*a^3*d^3+27*a^2*b^4)+9*a*b^2)^(1/3)/(2^(1/3)*3^(2/3)*a)-(4*(2/3)^(1/3)*d)/(sqrt(3)*sqrt(256*a^3*d^3+27*a^2*b^4)+9*a*b^2)^(1/3)) }
   #IMPROVE SOLUTION?
-  
+  Te
   return(Te-273.15)
 } 
 
 
-Tb_butterfly(25, 30, 20, 0.4, 600, 300, 30, 0.36, 1.46, 0.6, r_g=0.3, shade=TRUE)
+Tb_butterfly(25, 30, 20, 1, 900, 400, z = seq(0, 90, by = 10), 0.36, 1.46, 0.6, r_g=0.3, shade=FALSE)
 
 
 
@@ -106,10 +119,12 @@ ncdc_stations(limit = 100,
                          
                          ),
               token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq")
-coops_search()
 
-ghcnd_search("GHCND:US1COGN0002", var = "TMAX")
-ncdc(stationid = "GHCND:US1COGN0002", token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", startdate = 2010-06-01, enddate = 2020-06-25)
+ghcnd_search("GHCND:USC00051959", var = "TMAX")
+ncdc(datasetid = 'GHCND', stationid = "GHCND:USR0000CTAY", token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", startdate = 2010-06-01, enddate = 2010-06-25)
+sum <- ncdc_datasets(datasetid = 'GHCND', stationid = "GHCND:USR0000CTAY", token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq")
+USR0000CTAY  
+sum
 var <- ncdc_datasets("GHCND:US1COGN0002", token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq")
 
 tMin <- ghcnd_search(stationid = "USC00051959", token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", var = "TMIN", date_min = 2020-06-01)
