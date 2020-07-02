@@ -73,7 +73,7 @@ shinyServer <- function(input, output, session) {
     
     ggplot() + geom_line(aes(x = combined$dateHour, y = combined$value, color = "Environmental \ntemperature"), size = 1.3) + geom_line(aes(x = combined$dateHour, y = Tb, color = "Operative \ntemperature"), size = 1.3) +
       xlab("Day") + ylab("Temperature (°C)") + theme_bw() + ggtitle("Colias body temperatures in the past week") +
-      scale_color_manual(values = colors) + 
+      scale_color_manual(values = colors) +
       theme(plot.title = element_text(size = 18), axis.text = element_text(size = 13), axis.title = element_text(size = 16), legend.text = element_text(size = 13), 
             legend.title = element_blank())
   })
@@ -133,16 +133,19 @@ shinyServer <- function(input, output, session) {
   # data filter for ggplot
   data_gg <- reactive({
     df <- Colias %>% filter(year == input$year_gg & absorp %in% input$abs_gg & gen %in% input$gen_gg) %>% na.omit()
-    df[,c("lat", "lon", "absorp", "gen", paste(shortName[input$metric_gg]))] %>% na.omit()
+    df[,c("lat", "lon", "absorp", "gen", paste(shortName[input$metric_gg]))] %>% na.omit() %>% 
+      gather(Param, value, shortName[input$metric_gg])
+
   })
   
   output$mymap_gg <- renderPlot({
+    
     ggplot() +
       borders(fill="grey",colour="black") +
       xlab("Longitude (°)") + ylab("Latitude (°)") + theme_bw( ) + 
-      geom_raster(data = data_gg(), aes_string(x = "lon", y = "lat", fill = shortName[input$metric_gg])) +
+      geom_raster(data = data_gg(), aes_string(x = "lon", y = "lat", fill = "value")) +
       coord_quickmap(xlim = c(min(data_gg()$lon), max(data_gg()$lon)), ylim = c(min(data_gg()$lat), max(data_gg()$lat)), expand = TRUE) +
-      scale_fill_gradientn(name = input$metric_gg, colors = viridis(12), na.value = "white") + facet_grid(as.formula(paste("~", input$facet_gg))) +
+      scale_fill_gradientn(name = input$metric_gg, colors = viridis(12), na.value = "white") + facet_grid(as.formula(paste("Param ~", input$facet_gg))) +
       theme(strip.text = element_text(size = 12)) + theme(plot.title = element_text(hjust = 0.5)) +
       #theme(plot.background = element_rect(fill = "#F5F5F5"), panel.background = element_rect(fill = "#F5F5F5")) +
       theme(plot.title = element_text(size = 18), axis.text = element_text(size = 12), axis.title = element_text(size = 14), legend.text = element_text(size = 12),
@@ -184,13 +187,15 @@ shinyServer <- function(input, output, session) {
       df <- av.Colias %>% filter(year >= input$yearPlot[1] & year <= input$yearPlot[2] & gen %in% input$genPlot & absorp %in% input$absPlot & elevRange %in% input$elev )
       df %>% na.omit()
     }
-    df
+    df %>% 
+      gather(Param, value, shortName[input$yaxis])
   })
 
   # Data for plot when x axis is Elevation
   elevData <- reactive({
     df <- Colias %>% filter(year %in% input$yearPlot & elev >= input$elev[1] & elev <= input$elev[2] & gen %in% input$genPlot & absorp %in% input$absPlot)
-    df %>% na.omit()
+    df %>% na.omit() %>% 
+      gather(Param, value, shortName[input$yaxis])
   })
   
   # title <- reactive({
@@ -226,30 +231,40 @@ shinyServer <- function(input, output, session) {
 
       if (input$sort_x == "Year") {
         if (input$sort_col == "Elevation") {
-          p <- ggplot(data=yearData(), aes_string(x= variables[input$sort_x], y= shortName[input$yaxis], col = "elevRange"))
+          p <- ggplot(data=yearData(), aes_string(x= variables[input$sort_x], y= "value", col = "elevRange"))
         } else {  # x axis = year, color = gen or absorp
-          p <- ggplot(data=yearData(), aes_string(x= variables[input$sort_x], y= shortName[input$yaxis], col = color))
+          p <- ggplot(data=yearData(), aes_string(x= variables[input$sort_x], y= "value", col = color))
         }
       } else {  # x axis = Elevation, color = anything
-        p <- ggplot(data=elevData(), aes_string(x= variables[input$sort_x], y= shortName[input$yaxis], col = color))
+        p <- ggplot(data=elevData(), aes_string(x= variables[input$sort_x], y= "value", col = color))
       }
       p <- p + scale_color_manual(name = input$sort_col, values = c("#b35806", "#f1a340", "#998ec3", "#542788", "#fee0b6", "#d8daeb", "#f7f7f7")) 
 
     } else {  # no color
       if (input$sort_x == "Year") {
-        p <- ggplot(data=yearData(), aes_string(x= variables[input$sort_x], y= shortName[input$yaxis])) 
+        p <- ggplot(data=yearData(), aes_string(x= variables[input$sort_x], y= "value")) 
       } else {  # x axis == "Elevation"
-        p <- ggplot(data=elevData(), aes_string(x= variables[input$sort_x], y= shortName[input$yaxis]))
+        p <- ggplot(data=elevData(), aes_string(x= variables[input$sort_x], y= "value"))
       }
     }
     
-    p <- p + geom_point() + ylab(input$yaxis) + xlab(input$xaxis) + theme_bw(base_size = 16)
+    p <- p + geom_point() + xlab(input$xaxis) + theme_bw(base_size = 16)
     
     if (!is.null(input$sort_facet) && length(input$sort_facet) != 0) {  # add facets
-      p <- p + facet_wrap(as.formula(paste("~", variables[input$sort_facet])))
-    }
+      if(length(input$yaxis) == 1) {
+        xFac <- "~"
+      } else {
+        xFac <- "Param ~"
+      }
+      p <- p + facet_grid(as.formula(paste(xFac, variables[input$sort_facet])), scales = "free", switch = "y")
+    } else if (length(input$yaxis) != 1) {
+      p <- p + facet_grid(Param ~ . , scales = "free", switch = "y")
+    } 
     if (input$trendline) {  # add trendlines
       p <- p + geom_smooth(method="loess", se=FALSE)
+    }
+    if (length(input$yaxis) == 1) {
+      p <- p + ylab(input$yaxis) 
     }
     p
   })

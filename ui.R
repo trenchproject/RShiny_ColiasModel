@@ -1,4 +1,4 @@
-packages <- c("shiny", "magrittr", "ggplot2", "dplyr", "leaflet", "ggmap", "maps", "raster", "sp", "rgdal", "viridis", "shinythemes", "shinyWidgets", "shinycssloaders", "shinyjs", "colorRamps", "sortable", "rnoaa", "chillR", "reshape2", "rasterVis")
+packages <- c("shiny", "magrittr", "ggplot2", "dplyr", "leaflet", "ggmap", "maps", "raster", "sp", "rgdal", "viridis", "shinythemes", "shinyWidgets", "shinycssloaders", "shinyjs", "colorRamps", "sortable", "rnoaa", "chillR", "reshape2", "rasterVis", "tidyr")
 package.check <- lapply(
   packages,
   FUN = function(x) {
@@ -54,7 +54,7 @@ shinyUI <- fluidPage(
   ),
   
   includeHTML("intro2.html"),
-  
+  br(),
   tabsetPanel(type = "tabs", id = "tabs",
               tabPanel("Map",
                       sidebarLayout(
@@ -63,7 +63,12 @@ shinyUI <- fluidPage(
                           sliderInput("year", "Year", min = 1950, max = 2099, value = 1999),
                           selectInput("abs", "Wing absorptivity", choices = seq(0.4, 0.7, 0.05)),
                           selectInput("gen", "Generation", choices = c(1, 2, 3)),
-                          radioButtons("metric", "Metric to plot", choices = c("Population growth rate", "Flight activity time (s)", "Egg viability (%)", "Body temperature (°C)"))
+                          checkboxGroupInput("metric", "Metric to plot", 
+                                             choices = c("Population growth rate", 
+                                                         "Flight activity time (s)", 
+                                                         "Egg viability (%)", 
+                                                         "Body temperature (°C)"),
+                                             selected = "Population growth rate")
                         ),
                         mainPanel(
                           h4("Leaflet"),
@@ -74,7 +79,12 @@ shinyUI <- fluidPage(
                       sidebarLayout(
                         sidebarPanel(
                           h4("For ggplot"),
-                          radioButtons("metric_gg", "Metric to plot", choices = c("Population growth rate", "Flight activity time (s)", "Egg viability (%)", "Body temperature (°C)")),
+                          checkboxGroupInput("metric_gg", "Metric to plot", 
+                                             choices = c("Population growth rate", 
+                                                         "Flight activity time (s)", 
+                                                         "Egg viability (%)", 
+                                                         "Body temperature (°C)"),
+                                             selected = "Population growth rate"),
                           radioButtons("facet_gg", "Facets", choices = c("Wing absorptivity" = "absorp", "Generation" = "gen")),
                           sliderInput("year_gg", "Year", min = 1950, max = 2099, value = 1999),
                           selectInput("abs_gg", "Wing absorptivity", choices = seq(0.4, 0.7, 0.05), multiple = TRUE, selected = 0.4),
@@ -103,7 +113,12 @@ shinyUI <- fluidPage(
                                  )
                                
                                ),
-                               radioButtons("yaxis", "Y axis", choices = c("Population growth rate", "Flight activity time (s)", "Egg viability (%)", "Body temperature (°C)"))
+                               checkboxGroupInput("yaxis", "Y axis", 
+                                                  choices = c("Population growth rate", 
+                                                              "Flight activity time (s)", 
+                                                              "Egg viability (%)", 
+                                                              "Body temperature (°C)"),
+                                                  selected = "Population growth rate")
                                
                              ),
                              column(5,
