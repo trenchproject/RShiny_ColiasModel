@@ -121,7 +121,7 @@ ncdc_stations(limit = 100,
               token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq")
 
 ghcnd_search("GHCND:USC00051959", var = "TMAX")
-ncdc(datasetid = 'GHCND', stationid = "GHCND:USR0000CTAY", token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", startdate = 2010-06-01, enddate = 2010-06-25)
+ncdc(datasetid = 'GHCND', stationid = "GHCND:USC00051959", token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", startdate = 2010-06-01, enddate = 2010-06-25)
 sum <- ncdc_datasets(datasetid = 'GHCND', stationid = "GHCND:USR0000CTAY", token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq")
 USR0000CTAY  
 sum
@@ -169,15 +169,6 @@ df
 
 
 
-Tb_butterfly()
-AOI = aoi_get(state = "CO")
-#Get temp raster stack for start_date
-#raster::plot(AOI)
-p = getGridMET(AOI, param = c('tmax','tmin'), startDate = '2020-06-22', endDate = '2020-06-23')
-r = raster::stack(p$tmax, p$tmin)
-names(r) = c('tmax', 'tmin')
-rasterVis::levelplot(r)
-df_CO <- rasterToPoints(r) %>% as.data.frame()
 
 df_filter <- filter(df_CO, x >= min(Colias$lon) & x <= max(Colias$lon) & y >= min(Colias$lat) & y <= max(Colias$lat))
 df_filter
@@ -200,3 +191,10 @@ plot(0:23, test[2,11:34])
 install.packages("devtools")   
 library("devtools")   
 devtools::install_github(build_vignettes = TRUE,repo = "trenchproject/TrenchR")
+
+
+df <- Colias %>% filter(year == 2020 & absorp %in% 0.4 & gen %in% 1) %>% na.omit()
+df <- df[,c("lat", "lon", "absorp", "gen", "lambda", "eggV")] %>% na.omit()
+df_long <- df %>% gather(Param, value, c("lambda", "eggV"))
+df_long
+tail(df_long)

@@ -5,6 +5,8 @@ shortName = c("Population growth rate" = "lambda", "Flight activity time (s)" = 
 variables <- c("Year" = "year", "Absorptivity" = "absorp", "Generation" = "gen", "Elevation" = "elev")
 elevCat <- c("1392 ~ 1700", "1701 ~ 2000", "2001 ~ 2300", "2301 ~ 2600", "2601 ~ 2900", "2901 ~ 3198")
 
+ghcnd(stationid = "GHCND:USC00051959")
+
 tMin <- ghcnd_search(stationid = "USC00051959", token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", var = "TMIN")
 tMax <- ghcnd_search(stationid = "USC00051959", token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", var = "TMAX")
 
@@ -32,7 +34,7 @@ hourlyTemp <- make_hourly_temps(mean(Colias$lat), temp)
 hourlyTemp <- hourlyTemp[, c(8:31)] %>% t() %>% as.data.frame()
 
 hourlyTemp$Hour <- c(0:23)
-colnames(hourlyTemp) <- c(as.character(seq.Date(from = Sys.Date() - 8, to = Sys.Date() - 2, by = "1 day")), "Hour")
+colnames(hourlyTemp) <- c(as.character(seq.Date(from = Sys.Date() - 8, to = Sys.Date() - 10 + length(hourlyTemp), by = "1 day")), "Hour")
 
 combined <- melt(hourlyTemp, id.vars = "Hour")
 
@@ -41,7 +43,6 @@ for(row in 1:dim(combined)[1]) {
 }
 hours <- as.POSIXct(combined$dateHour, format="%Y-%m-%d %H:%M")
 combined$dateHour <- hours
-
 
 
 
@@ -56,9 +57,9 @@ shinyServer <- function(input, output, session) {
       H_sdir <- 200
     }
     
-    seq <- rep(seq.Date(from = Sys.Date() - 8, to = Sys.Date() - 2, by = "1 day"), each = 24)
+    seq <- rep(seq.Date(from = Sys.Date() - 8, to = Sys.Date() - 10 + length(hourlyTemp), by = "1 day"), each = 24)
     doy = day_of_year(seq)
-    hour = rep(0:23, times = 7)
+    hour = rep(0:23, times = length(hourlyTemp) - 1)
     z <- zenith_angle(doy= doy, lat = mean(Colias$lat), lon = mean(Colias$lon), hour= hour)
     shade <- rep(FALSE, length(z))
     for (i in 1:length(z)) {
