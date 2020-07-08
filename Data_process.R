@@ -40,3 +40,17 @@ for (year in 1:150) {
 }
 
 saveRDS(complete[-1,], file = "Colias_complete.rds")
+
+
+
+#_____________________________________________________________________________________
+# Processing elevation data from NOAA
+elevation <- raster("ETOPO1_Ice_g_gmt4.grd")
+
+e <- as(extent(-108.8125, -104.9375, 37.1875, 40.8125), 'SpatialPolygons')
+crs(e) <- "+proj=longlat +datum=WGS84 +no_defs"
+r <- crop(elevation, e)
+COelev <- rasterToPoints(r) %>% as.data.frame()
+
+
+write.csv(x = COelev, "COelev.csv", row.names = FALSE)
