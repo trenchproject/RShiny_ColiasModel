@@ -73,12 +73,12 @@ shinyUI <- fluidPage(
     at elevation of 2700m (38.9°, -107.0°), and converted to hourly temperatures using functions from chillR.", code("TrenchR::Tb_butterfly"), "function was then used to compute the operative temperature of butterflies. 
     Wind speed is set at 1 m/s, and it models butterfly body temperature in the sun during the day unless overcast. 
     Fur thickness = 0.82 mm and thorax diameter = 3.6 mm are used based on measurements for", em("C. eriphyle"), "at several sites in Colorado (Kingsolver, 1983).
-    Daily solar irradiance is set to 8000 W/m", tags$sup("2"), "for a sunny day, 5000 W/m", tags$sup("2"), "for a partially cloudy day and 2000 W/m", tags$sup("2"), "for an overcast day and", code("TrenchR::diurnal_radiation_variation"), "function converted it into hourly solar radiation estimates."),
+    Daily solar irradiance is set to 8000 W/m", tags$sup("2"), "for a clear day, 5000 W/m", tags$sup("2"), "for a partly cloudy day and 2000 W/m", tags$sup("2"), "for a cloudy day and", code("TrenchR::diurnal_radiation_variation"), "function converted it into hourly solar radiation estimates."),
   
   sidebarLayout(
     sidebarPanel(
       selectInput("abs_intro", "Wing absorptivity", choices = seq(0.4, 0.7, 0.05)),
-      selectInput("weather", "Weather", choices = c("Sunny", "Partially cloudy", "Overcast"))
+      selectInput("weather", "Weather", choices = c("Clear", "Partly cloudy", "Cloudy"))
     ),
     mainPanel(
       plotOutput("plot_intro") %>% withSpinner(type = 7)
@@ -94,7 +94,7 @@ shinyUI <- fluidPage(
                         sidebarPanel(
                           h4(icon("map-marked-alt"), " Map"),
                           p("This activity displays 4 fitness-related parameters of Colias in western Colorado. 
-                            The layer can be switched between 'data' and 'elevation' by clicking the button on the top, where 'data' shows the selected parameters and 'elevation' displays the topography across the range.
+                            The layer can be switched between 'data' and 'elevation' by clicking the button on the top, where 'data' shows the selected parameters and 'elevation' displays just the topography across the range.
                             Clicking on the map gives you detailed data of the specific location."),
                           checkboxGroupInput("metric", "Metric to plot", 
                                              choices = c("Population growth rate", 
@@ -111,7 +111,7 @@ shinyUI <- fluidPage(
                           br(),
                           fluidRow(
                             column(6, switchInput(inputId = "layer", label = "Layer", onLabel = "Data", offLabel = "Elevation", inline = TRUE, value = TRUE, size = "small")),
-                            column(4, offset = 2, materialSwitch("labels", status = "danger", label = "Hide labels", value = TRUE),
+                            column(4, offset = 2, materialSwitch("labels", status = "danger", label = "Labels On/Off", value = TRUE),
 )
                           ),
                           verbatimTextOutput("info"),

@@ -82,9 +82,9 @@ shinyServer <- function(input, output, session) {
       }
     }
     
-    if (input$weather == "Sunny") {
+    if (input$weather == "Clear") {
       solrad <- 8000
-    } else if (input$weather == "Partially cloudy") {
+    } else if (input$weather == "Partly cloudy") {
       solrad <- 5000
     } else {
       solrad <- 2000
