@@ -199,10 +199,10 @@ shinyServer <- function(input, output, session) {
       p <- p + theme(axis.title.x = element_blank())
     }
     if (input$labels) {
-      p <- p + geom_text(aes(x = -104.9903, y = 39.7392, label = "·"), size = 12) + geom_text(aes(x = -105.2903, y = 39.6592, label = "Denver"), size = 5) +
+      p <- p + geom_text(aes(x = -104.9903, y = 39.7392, label = "·"), size = 12) + geom_text(aes(x = -105.2903, y = 39.6292, label = "Denver"), size = 5) +
         geom_text(aes(x = -108.5506, y = 39.0639, label = "·"), size = 12) + geom_text(aes(x = -108.3906, y = 39.2639, label = "Grand \njunction"), size = 4) +
         geom_text(aes(x = -105.2705, y = 40.0150, label = "·"), size = 12) + geom_text(aes(x = -105.2705, y = 40.1350, label = "Boulder"), size = 5) +
-        geom_text(aes(x = -107.8762, y = 38.4783, label = "·"), size = 12) + geom_text(aes(x = -107.8762, y = 38.3883, label = "Montrose"), size = 4) +
+        geom_text(aes(x = -107.8762, y = 38.4783, label = "·"), size = 12) + geom_text(aes(x = -107.8762, y = 38.3683, label = "Montrose"), size = 4) +
         geom_text(aes(x = -106.8175, y = 39.1911, label = "·"), size = 12) + geom_text(aes(x = -106.8175, y = 39.2911, label = "Aspen"), size = 4)
         
     }

@@ -103,11 +103,12 @@ shinyUI <- fluidPage(
                                                          "Body temperature (°C)"),
                                              selected = "Population growth rate"),
                           radioButtons("facet", "Facets", choices = c("Wing absorptivity" = "absorp", "Generation" = "gen")),
-                          sliderInput("year", "Year", min = 1950, max = 2099, value = 1999),
+                          sliderInput("year", "Year", min = 1950, max = 2099, value = 2020),
                           selectInput("abs", "Wing absorptivity", choices = seq(0.4, 0.7, 0.05), multiple = TRUE, selected = 0.4),
                           selectInput("gen", "Generation", choices = c(1, 2, 3), multiple = TRUE, selected = 1)
                         ),
                         mainPanel(
+                          br(),
                           fluidRow(
                             column(6, switchInput(inputId = "layer", label = "Layer", onLabel = "Data", offLabel = "Elevation", inline = TRUE, value = TRUE, size = "small")),
                             column(4, offset = 2, materialSwitch("labels", status = "danger", label = "Hide labels", value = TRUE),
