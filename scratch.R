@@ -120,7 +120,7 @@ ncdc_stations(limit = 100,
                          ),
               token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq")
 
-ghcnd_search("GHCND:USC00051959", var = "TMAX")
+ghcnd_search("GHCND:USC00051959")
 ncdc(datasetid = 'GHCND', stationid = "GHCND:USC00051959", token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", startdate = '2020-06-01', enddate = '2020-06-25')
 sum <- ncdc_datasets(datasetid = 'GHCND', stationid = "GHCND:USR0000CTAY", token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq")
 USR0000CTAY  
@@ -200,3 +200,8 @@ df
 df_long <- df %>% gather(Param, value, c("lambda", "eggV"))
 df_long
 tail(df_long)
+
+
+map <- get_stamenmap(bbox = c(left = -108.8125, right = -104.9375, bottom = 37.1875, top = 40.8125), zoom = , maptype = "terrain")
+ggmap(map)
+object.size(map)

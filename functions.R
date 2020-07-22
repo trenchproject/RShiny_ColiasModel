@@ -129,3 +129,36 @@ day_of_year<- function(day, format="%Y-%m-%d"){
   day=  as.POSIXlt(day, format=format)
   return(as.numeric(strftime(day, format = "%j")))
 }
+
+diurnal_radiation_variation=function(doy, solrad, hour, lon, lat){ 
+  
+  #Calculate solar time
+  rd=180/pi;  # factor to convert radians into degrees
+  RevAng = 0.21631 + 2 * atan(0.967 * tan(0.0086 * (-186 + doy))); # Revolution angle in radians
+  DecAng = asin(0.39795 * cos(RevAng));  # Declination angle in radians      
+  
+  f=(279.575+0.9856*doy)/rd;  # f in radians
+  ET= (-104.7*sin(f)+596.2*sin(2*f)+4.3*sin(3*f)-12.7*sin(4*f)-429.3*cos(f)-2.0*cos(2*f)+19.3*cos(3*f))/3600;   #(11.4) Equation of time
+  LC= 1/15* (15 - lon%%15); # longitude correction, 1/15h for each degree e of standard meridian
+  hour_sol=12+LC+ET
+  
+  #W: hour angle of the sun (in radians)
+  W= pi*(hour-hour_sol)/12  #Brock 1981
+  
+  #Ws: sunset hour angle (in radians)
+  Ws= acos( -tan(lat/rd) * tan(DecAng))
+  
+  d=0.409+0.5016*sin(Ws-1.047)
+  b=0.6609-0.4767*sin(Ws-1.047) #papers differ in whether sign before 0.4767 is negative or positive
+  
+  #rG: ratio of hourly to daily global radiation
+  rG= pi/24*(d+b*cos(W))*(cos(W)-cos(Ws))/(sin(Ws)-Ws*cos(Ws))   #(Liu and Jordan, Collares-Pereira and Rable 1979)
+  #rG= pi/24*(d +b*cos(W)-cos(Ws))/( sin(Ws)-Ws*cos(Ws) ) #Brock 1981
+
+  
+  solrad_hour=rG*solrad
+  
+  return(solrad_hour)
+}
+
+

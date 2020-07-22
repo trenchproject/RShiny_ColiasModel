@@ -54,3 +54,9 @@ COelev <- rasterToPoints(r) %>% as.data.frame()
 
 
 write.csv(x = COelev, "COelev.csv", row.names = FALSE)
+
+
+#______________________________________________________________________________________
+# Saving stamenmap
+map <- get_stamenmap(bbox = c(left = -108.8125, right = -104.9375, bottom = 37.1875, top = 40.8125), zoom = 10, maptype = "terrain")
+save(map, file = "my_map.RData")

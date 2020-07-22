@@ -1,4 +1,4 @@
-packages <- c("shiny", "magrittr", "ggplot2", "dplyr", "leaflet", "ggmap", "maps", "raster", "sp", "rgdal", "viridis", "shinythemes", "shinyWidgets", "shinycssloaders", "shinyjs", "colorRamps", "sortable", "rnoaa", "chillR", "reshape2", "rasterVis", "tidyr", "gridExtra", "shinyBS", "gridExtra")
+packages <- c("shiny", "magrittr", "ggplot2", "dplyr", "leaflet", "ggmap", "maps", "raster", "sp", "rgdal", "viridis", "shinythemes", "shinyWidgets", "shinycssloaders", "shinyjs", "colorRamps", "sortable", "rnoaa", "chillR", "reshape2", "rasterVis", "tidyr", "gridExtra", "shinyBS", "gridExtra", "ggmap")
 # package.check <- lapply(
 #   packages,
 #   FUN = function(x) {
@@ -34,6 +34,7 @@ library("tidyr")
 library("raster")
 library("shinyBS")
 library("gridExtra")
+library("ggmap")
 
 coltags<-
   lapply(c("Year", "Elevation", "Absorptivity", "Generation"),
@@ -72,7 +73,7 @@ shinyUI <- fluidPage(
     at elevation of 2700m (38.9°, -107.0°), and converted to hourly temperatures using functions from chillR.", code("TrenchR::Tb_butterfly"), "function was then used to compute the operative temperature of butterflies. 
     Wind speed is set at 1 m/s, and it models butterfly body temperature in the sun during the day unless overcast. 
     Fur thickness = 0.82 mm and thorax diameter = 3.6 mm are used based on measurements for", em("C. eriphyle"), "at several sites in Colorado (Kingsolver, 1983).
-    Solar radiation is set to 900 W/m", tags$sup("2"), "for a sunny day, 500 W/m", tags$sup("2"), "for a partially cloudy day and 200 W/m", tags$sup("2"), "for an overcast day."),
+    Daily solar irradiance is set to 8000 W/m", tags$sup("2"), "for a sunny day, 5000 W/m", tags$sup("2"), "for a partially cloudy day and 2000 W/m", tags$sup("2"), "for an overcast day and", code("TrenchR::diurnal_radiation_variation"), "function converted it into hourly solar radiation estimates."),
   
   sidebarLayout(
     sidebarPanel(
@@ -107,8 +108,11 @@ shinyUI <- fluidPage(
                           selectInput("gen", "Generation", choices = c(1, 2, 3), multiple = TRUE, selected = 1)
                         ),
                         mainPanel(
-                          switchInput(inputId = "layer", label = "Layer", onLabel = "Data", offLabel = "Elevation", inline = TRUE, value = TRUE, size = "small"),
-                          
+                          fluidRow(
+                            column(6, switchInput(inputId = "layer", label = "Layer", onLabel = "Data", offLabel = "Elevation", inline = TRUE, value = TRUE, size = "small")),
+                            column(4, offset = 2, materialSwitch("labels", status = "danger", label = "Hide labels", value = TRUE),
+)
+                          ),
                           verbatimTextOutput("info"),
                           plotOutput("mymap_gg", click = "plot_click") %>% withSpinner(type = 7)
                           # leafletOutput("mymap") %>% withSpinner(type = 7)

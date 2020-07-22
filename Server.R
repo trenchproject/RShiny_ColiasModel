@@ -5,6 +5,7 @@ COelev <- read.csv("COelev.csv")
 shortName = c("Population growth rate" = "lambda", "Flight activity time (s)" = "FAT", "   Egg viability (%)    " = "eggV", "Body temperature (°C)" = "temp")
 variables <- c("Year" = "year", "Absorptivity" = "absorp", "Generation" = "gen", "Elevation" = "elev")
 elevCat <- c("1392 ~ 1700", "1701 ~ 2000", "2001 ~ 2300", "2301 ~ 2600", "2601 ~ 2900", "2901 ~ 3198")
+load(file = "my_map.RData")
 
 
 tmax <- ncdc(datasetid = 'GHCND', 
@@ -73,25 +74,30 @@ shinyServer <- function(input, output, session) {
     seq <- rep(seq.Date(from = Sys.Date() - 8, to = Sys.Date() - 10 + length(hourlyTemp), by = "1 day"), each = 24)
     doy = day_of_year(seq)
     hour = rep(0:23, times = length(hourlyTemp) - 1)
-    z <- zenith_angle(doy= doy, lat = mean(Colias$lat), lon = mean(Colias$lon), hour= hour)
+    z <- zenith_angle(doy = doy, lat = mean(Colias$lat), lon = mean(Colias$lon), hour = hour)
     shade <- rep(FALSE, length(z))
     for (i in 1:length(z)) {
       if (z[i] == 90) {
         shade[i] <- TRUE
       }
     }
+    
     if (input$weather == "Sunny") {
-      H_sdir <- 900
+      solrad <- 8000
     } else if (input$weather == "Partially cloudy") {
-      H_sdir <- 500
+      solrad <- 5000
     } else {
-      H_sdir <- 200
+      solrad <- 2000
       shade = FALSE
     }
+    
+    rad <- diurnal_radiation_variation(doy, solrad = solrad, hour = hour, lon = mean(Colias$lon), lat = mean(Colias$lat))
+    rad[rad < 0] <- 0
+
     colors <- c("Environmental" = "black", "Operative" = "blue")
     
     Tb <- mapply(Tb_butterfly, 
-                 combined$value, combined$value+5, Tg_sh = combined$value-5, u = 1, H_sdir = H_sdir, H_sdif = 400, z = 30, D=0.36, delta=0.82, alpha=as.numeric(input$abs_intro), r_g=0.3, shade = shade)
+                 combined$value, combined$value+5, Tg_sh = combined$value-5, u = 1, H_sdir = rad, H_sdif = 400, z = 30, D=0.36, delta=0.82, alpha=as.numeric(input$abs_intro), r_g=0.3, shade = shade)
     
     ggplot() + geom_line(aes(x = combined$dateHour, y = combined$value, color = "Environmental"), size = 1.3) + geom_line(aes(x = combined$dateHour, y = Tb, color = "Operative"), size = 1.3) +
       xlab("Day") + ylab("Temperature (°C)") + theme_bw() + ggtitle("C. eriphyle body temperatures in the past week") +
@@ -180,18 +186,25 @@ shinyServer <- function(input, output, session) {
   })
   
   defaultPlot <- function(param, axis = FALSE) {
-    p <- ggplot() +
-      borders(fill="grey",colour="black") +
+    p <- ggmap(map) +
       xlab("Longitude (°)") + ylab("Latitude (°)") + theme_bw( ) +
       geom_raster(data = data_gg(), aes_string(x = "lon", y = "lat", fill = shortName[param])) +
       coord_quickmap(xlim = c(min(data_gg()$lon), max(data_gg()$lon)), ylim = c(min(data_gg()$lat), max(data_gg()$lat)), expand = TRUE) +
-      scale_fill_gradientn(name = param, colors = viridis(12), na.value = "white") + facet_grid(as.formula(paste("~", input$facet))) +
+      scale_fill_gradientn(name = param, colors = alpha(viridis(12), 0.7) , na.value = "white") + facet_grid(as.formula(paste("~", input$facet))) +
       theme(strip.text = element_text(size = 12)) + 
       #theme(plot.background = element_rect(fill = "#F5F5F5"), panel.background = element_rect(fill = "#F5F5F5")) +
       theme(plot.title = element_text(size = 18, hjust = 0.5), axis.text = element_text(size = 12), axis.title = element_text(size = 14), legend.text = element_text(size = 12),
             legend.title = element_text(size = 12)) 
     if (!axis) {
       p <- p + theme(axis.title.x = element_blank())
+    }
+    if (input$labels) {
+      p <- p + geom_text(aes(x = -104.9903, y = 39.7392, label = "·"), size = 12) + geom_text(aes(x = -105.2903, y = 39.6592, label = "Denver"), size = 5) +
+        geom_text(aes(x = -108.5506, y = 39.0639, label = "·"), size = 12) + geom_text(aes(x = -108.3906, y = 39.2639, label = "Grand \njunction"), size = 4) +
+        geom_text(aes(x = -105.2705, y = 40.0150, label = "·"), size = 12) + geom_text(aes(x = -105.2705, y = 40.1350, label = "Boulder"), size = 5) +
+        geom_text(aes(x = -107.8762, y = 38.4783, label = "·"), size = 12) + geom_text(aes(x = -107.8762, y = 38.3883, label = "Montrose"), size = 4) +
+        geom_text(aes(x = -106.8175, y = 39.1911, label = "·"), size = 12) + geom_text(aes(x = -106.8175, y = 39.2911, label = "Aspen"), size = 4)
+        
     }
     return(p)
   }
@@ -208,7 +221,7 @@ shinyServer <- function(input, output, session) {
     validate(
       need(input$metric, "Select a metric to map")
     )
-    if (input$layer) {
+    if (input$layer) {   # Data
       n <- length(input$metric)
       first <- defaultPlot(input$metric[1])
       last <- defaultPlot(input$metric[n], TRUE)
@@ -221,15 +234,31 @@ shinyServer <- function(input, output, session) {
       } else {
         last
       }
-    } else {
-      ggplot() + geom_raster(data = COelev, aes(x = x, y = y, fill = z)) + xlab("Longitude (°)") + ylab("Latitude (°)") +
-        coord_quickmap(xlim = c(-108.8125, -104.9375), ylim = c(37.1875, 40.8125), expand = TRUE) +
-        scale_fill_gradientn(name = "Elevation (m)", colors = heat.colors(10), na.value = "white") + 
-        theme(strip.text = element_text(size = 12)) + 
-        #theme(plot.background = element_rect(fill = "#F5F5F5"), panel.background = element_rect(fill = "#F5F5F5")) +
+    } else {    # Elevation
+      map <- ggmap(map) +
+        xlab("Longitude (°)") + ylab("Latitude (°)") +
         theme(plot.title = element_text(size = 18, hjust = 0.5), axis.text = element_text(size = 12), axis.title = element_text(size = 14), legend.text = element_text(size = 12),
               legend.title = element_text(size = 12)) 
+      # ggplot() + geom_raster(data = COelev, aes(x = x, y = y, fill = z)) + xlab("Longitude (°)") + ylab("Latitude (°)") +
+      #   coord_quickmap(xlim = c(-108.8125, -104.9375), ylim = c(37.1875, 40.8125), expand = TRUE) +
+      #   scale_fill_gradientn(name = "Elevation (m)", colors = heat.colors(10), na.value = "white") + 
+      #   theme(strip.text = element_text(size = 12)) + 
+      #   #theme(plot.background = element_rect(fill = "#F5F5F5"), panel.background = element_rect(fill = "#F5F5F5")) +
+      #   theme(plot.title = element_text(size = 18, hjust = 0.5), axis.text = element_text(size = 12), axis.title = element_text(size = 14), legend.text = element_text(size = 12),
+      #         legend.title = element_text(size = 12)) 
+
+      if (input$labels) {
+        map <- map + geom_text(aes(x = -104.9903, y = 39.7392, label = "·"), size = 12) + geom_text(aes(x = -105.2903, y = 39.6592, label = "Denver"), size = 5) +
+          geom_text(aes(x = -108.5506, y = 39.0639, label = "·"), size = 12) + geom_text(aes(x = -108.3906, y = 39.2639, label = "Grand \njunction"), size = 4) +
+          geom_text(aes(x = -105.2705, y = 40.0150, label = "·"), size = 12) + geom_text(aes(x = -105.2705, y = 40.1350, label = "Boulder"), size = 5) +
+          geom_text(aes(x = -107.8762, y = 38.4783, label = "·"), size = 12) + geom_text(aes(x = -107.8762, y = 38.3883, label = "Montrose"), size = 4) +
+          geom_text(aes(x = -106.8175, y = 39.1911, label = "·"), size = 12) + geom_text(aes(x = -106.8175, y = 39.2911, label = "Aspen"), size = 4)
+      }
+      map
+      
     }
+    
+        
   }, height = height)
   
   output$topo <- renderLeaflet({
@@ -277,29 +306,6 @@ shinyServer <- function(input, output, session) {
     df %>% na.omit() %>% 
       gather(Param, value, shortName[input$yaxis])
   })
-  
-  # title <- reactive({
-  #   validate(
-  #     need(input$sort_x, "")
-  #   )
-  #   if (!is.null(input$sort_col) && length(input$sort_col) != 0) {
-  #     if (input$sort_x == "Elevation") {
-  #       title <- ""
-  #       if (input$sort_col != "Year" && input$sort_facet != "Year") {
-  #         title <- paste(title, "Year :", input$yearPlot)
-  #       } 
-  #       if (input$sort_col != "Generation" && input$sort_facet != "Generation") {
-  #         title <- paste("| Generation :", input$genPlot)
-  #       }
-  #       if (input$sort_col != "Absorptivity" && input$sort_facet != "Absorptivity") {
-  #         title <- paste("| Absorptivity :", input$absPlot)
-  #       }
-  #     }
-  #   } else {
-  #     title <- paste("Year :", input$yearPlot, "| Generation :", input$genPlot, "| Absorptivity :", input$absPlot)
-  #   }
-  #   title
-  # })
   
   output$plot <- renderPlot({
     validate(
