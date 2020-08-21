@@ -199,7 +199,7 @@ shinyServer <- function(input, output, session) {
       p <- p + theme(axis.title.x = element_blank())
     }
     if (input$labels) {
-      p <- p + geom_text(aes(x = -104.9903, y = 39.7392, label = "·"), size = 12) + geom_text(aes(x = -105.2903, y = 39.6292, label = "Denver"), size = 5) +
+      p <- p + geom_text(aes(x = -104.9903, y = 39.7392, label = "·"), size = 12) + geom_text(aes(x = -105.2903, y = 39.6192, label = "Denver"), size = 5) +
         geom_text(aes(x = -108.5506, y = 39.0639, label = "·"), size = 12) + geom_text(aes(x = -108.3906, y = 39.2639, label = "Grand \njunction"), size = 4) +
         geom_text(aes(x = -105.2705, y = 40.0150, label = "·"), size = 12) + geom_text(aes(x = -105.2705, y = 40.1350, label = "Boulder"), size = 5) +
         geom_text(aes(x = -107.8762, y = 38.4783, label = "·"), size = 12) + geom_text(aes(x = -107.8762, y = 38.3683, label = "Montrose"), size = 4) +
@@ -248,10 +248,10 @@ shinyServer <- function(input, output, session) {
       #         legend.title = element_text(size = 12)) 
 
       if (input$labels) {
-        map <- map + geom_text(aes(x = -104.9903, y = 39.7392, label = "·"), size = 12) + geom_text(aes(x = -105.2903, y = 39.6592, label = "Denver"), size = 5) +
+        map <- map + geom_text(aes(x = -104.9903, y = 39.7392, label = "·"), size = 12) + geom_text(aes(x = -105.2903, y = 39.6192, label = "Denver"), size = 5) +
           geom_text(aes(x = -108.5506, y = 39.0639, label = "·"), size = 12) + geom_text(aes(x = -108.3906, y = 39.2639, label = "Grand \njunction"), size = 4) +
           geom_text(aes(x = -105.2705, y = 40.0150, label = "·"), size = 12) + geom_text(aes(x = -105.2705, y = 40.1350, label = "Boulder"), size = 5) +
-          geom_text(aes(x = -107.8762, y = 38.4783, label = "·"), size = 12) + geom_text(aes(x = -107.8762, y = 38.3883, label = "Montrose"), size = 4) +
+          geom_text(aes(x = -107.8762, y = 38.4783, label = "·"), size = 12) + geom_text(aes(x = -107.8762, y = 38.3683, label = "Montrose"), size = 4) +
           geom_text(aes(x = -106.8175, y = 39.1911, label = "·"), size = 12) + geom_text(aes(x = -106.8175, y = 39.2911, label = "Aspen"), size = 4)
       }
       map
@@ -260,13 +260,7 @@ shinyServer <- function(input, output, session) {
     
         
   }, height = height)
-  
-  output$topo <- renderLeaflet({
-    leaflet() %>%
-      addProviderTiles(providers$Stamen.Terrain) %>%
-      setView(lng = (min(Colias$lon) + max(Colias$lon)) / 2, lat = (min(Colias$lat) + max(Colias$lat)) / 2, zoom = 6) %>%
-      addRectangles(lng1 = min(Colias$lon), lng2 = max(Colias$lon), lat1 = min(Colias$lat), lat2 = max(Colias$lat))
-  })
+
   
   # Data for plot when x axis is Year
   yearData <- reactive({
