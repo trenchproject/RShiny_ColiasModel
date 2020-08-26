@@ -7,20 +7,42 @@ variables <- c("Year" = "year", "Absorptivity" = "absorp", "Generation" = "gen",
 elevCat <- c("1392 ~ 1700", "1701 ~ 2000", "2001 ~ 2300", "2301 ~ 2600", "2601 ~ 2900", "2901 ~ 3198")
 load(file = "my_map.RData")
 
+x <- 1
+t <- 0
 
-tmax <- ncdc(datasetid = 'GHCND', 
-             stationid = "GHCND:USC00051959", 
-             token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", 
-             startdate = Sys.Date() - 8, 
-             enddate = Sys.Date() - 2, 
-             datatypeid = "TMAX")
+while(t == 0) {
+  x <- x + 1
+  tmax <- ncdc(datasetid = 'GHCND', 
+               stationid = "GHCND:USC00051959", 
+               token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", 
+               startdate = Sys.Date() - x - 6, 
+               enddate = Sys.Date() - x, 
+               datatypeid = "TMAX")
+  t <- dim(tmax$data)[1]
+}
 
 tmin <- ncdc(datasetid = 'GHCND', 
              stationid = "GHCND:USC00051959", 
              token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", 
-             startdate = Sys.Date() - 8, 
-             enddate = Sys.Date() - 2, 
+             startdate = Sys.Date() - x - 6, 
+             enddate = Sys.Date() - x, 
              datatypeid = "TMIN")
+
+
+
+# tmax <- ncdc(datasetid = 'GHCND', 
+#              stationid = "GHCND:USC00051959", 
+#              token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", 
+#              startdate = Sys.Date() - 8, 
+#              enddate = Sys.Date() - 2, 
+#              datatypeid = "TMAX")
+# 
+# tmin <- ncdc(datasetid = 'GHCND', 
+#              stationid = "GHCND:USC00051959", 
+#              token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", 
+#              startdate = Sys.Date() - 8, 
+#              enddate = Sys.Date() - 2, 
+#              datatypeid = "TMIN")
 
 temp <- as.data.frame(tmax$data) %>% dplyr::select(date, value) %>% 
   set_colnames(c("date", "Tmax")) %>% 
@@ -28,19 +50,6 @@ temp <- as.data.frame(tmax$data) %>% dplyr::select(date, value) %>%
 
 temp[c(2,3)] <- temp[c(2,3)] / 10
 
-# tMin <- ghcnd_search(stationid = "USC00051959", token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", var = "TMIN")
-# tMax <- ghcnd_search(stationid = "USC00051959", token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", var = "TMAX")
-# 
-# tMax <- as.data.frame(tMax) %>% dplyr::select(c(tmax.tmax, tmax.date))
-# tMin <- as.data.frame(tMin) %>% dplyr::select(c(tmin.tmin, tmin.date))
-# 
-# tMax <- filter(tMax, tmax.date > Sys.Date() - 9, tmax.date < Sys.Date() - 1)
-# 
-# tMin <- filter(tMin, tmin.date > Sys.Date() - 9, tmin.date < Sys.Date() - 1)
-# colnames(tMin)[2] <- "tmax.date"
-# 
-# temp <- merge(tMax, tMin, by = "tmax.date")
-# temp[,c(2:3)] <- temp[,c(2:3)]/10
 
 temp$Year <- NA
 temp$Month <- NA
@@ -56,7 +65,7 @@ hourlyTemp <- make_hourly_temps(mean(Colias$lat), temp)
 hourlyTemp <- hourlyTemp[, c(8:31)] %>% t() %>% as.data.frame()
 
 hourlyTemp$Hour <- c(0:23)
-colnames(hourlyTemp) <- c(as.character(seq.Date(from = Sys.Date() - 8, to = Sys.Date() - 10 + length(hourlyTemp), by = "1 day")), "Hour")
+colnames(hourlyTemp) <- c(as.character(seq.Date(from = Sys.Date() - x - 6, to = Sys.Date() - x - 8 + length(hourlyTemp), by = "1 day")), "Hour")
 
 combined <- melt(hourlyTemp, id.vars = "Hour")
 
@@ -71,7 +80,7 @@ combined$dateHour <- hours
 shinyServer <- function(input, output, session) {
   
   output$plot_intro <- renderPlot({
-    seq <- rep(seq.Date(from = Sys.Date() - 8, to = Sys.Date() - 10 + length(hourlyTemp), by = "1 day"), each = 24)
+    seq <- rep(seq.Date(from = Sys.Date() - x - 6, to = Sys.Date() - x - 8 + length(hourlyTemp), by = "1 day"), each = 24)
     doy = day_of_year(seq)
     hour = rep(0:23, times = length(hourlyTemp) - 1)
     z <- zenith_angle(doy = doy, lat = mean(Colias$lat), lon = mean(Colias$lon), hour = hour)
