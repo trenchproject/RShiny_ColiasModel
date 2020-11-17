@@ -1,12 +1,5 @@
 # RShiny_ColiasModel
 
-https://huckley.shinyapps.io/rshiny_coliasmodel/
-
-R shiny interactive visualization of Colias butterfly biophysical / demographic / evolutionary model. 
-
-Fitness-related parameters such as population growth rate and Flight activity time of Colias butterflies in Colorado are projected through 2099.
-
-
 RShiny_ColiasModel is an interactive shiny app that allows any user to visualize fitness-related variables such as operataive temperature and egg viability of Colias butterflies under varying wing absorptivity. This visualization is based on [Buckley and Kingsolver (2019)](https://onlinelibrary.wiley.com/doi/full/10.1111/geb.12953), and uses a future air temperature projection model from the CMIP5 multimodel ensemble. 
 
 ## Prerequisites for opening in Rstudio
@@ -31,7 +24,7 @@ Click on "Code" on the top right to copy the link to this repository.
 Click ```File```, ```New Project```, ```Version Control```, ```Git```  
 Paste the repository URL and click ```Create Project```.
 
-* Alternatively, go to [this link](https://huckley.shinyapps.io/RShiny_RMBL-phenology/).
+* Alternatively, go to [this link](https://huckley.shinyapps.io/rshiny_coliasmodel/).
 
 We have a google doc with questions to guide through the app for further understanding of the topic.
 
