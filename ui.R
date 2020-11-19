@@ -1,4 +1,4 @@
-packages <- c("shiny", "magrittr", "ggplot2", "dplyr", "leaflet", "ggmap", "maps", "raster", "sp", "rgdal", "viridis", "shinythemes", "shinyWidgets", "shinycssloaders", "shinyjs", "colorRamps", "sortable", "rnoaa", "chillR", "reshape2", "rasterVis", "tidyr", "gridExtra", "shinyBS", "gridExtra", "ggmap")
+packages <- c("shiny", "magrittr", "ggplot2", "dplyr", "leaflet", "maps", "raster", "sp", "rgdal", "viridis", "shinythemes", "shinyWidgets", "shinycssloaders", "shinyjs", "sortable", "rnoaa", "chillR", "reshape2", "tidyr", "gridExtra", "shinyBS", "gridExtra", "ggmap")
 # package.check <- lapply(
 #   packages,
 #   FUN = function(x) {
@@ -24,17 +24,18 @@ library("shinythemes")
 library("shinyWidgets")
 library("shinycssloaders")
 library("shinyjs")
-library("colorRamps")
+#library("colorRamps")
 library("sortable")
 library("rnoaa")
 library("chillR")
 library("reshape2")
-library("rasterVis")
+#library("rasterVis")
 library("tidyr")
 library("raster")
 library("shinyBS")
 library("gridExtra")
 library("ggmap")
+library("cicerone")
 
 coltags<-
   lapply(c("Year", "Elevation", "Absorptivity", "Generation"),
@@ -55,6 +56,7 @@ Colias <- readRDS("Colias_complete.rds")
 
 
 shinyUI <- fluidPage(
+  use_cicerone(),
   theme = shinytheme("united"),
   setBackgroundColor(color = "#F5F5F5"), 
   useShinyjs(),
@@ -62,6 +64,7 @@ shinyUI <- fluidPage(
     div(tags$img(src="Butterfly_icon.png", height = 50), 
         "Colias Visualization")
   ),
+  title = "Colias Visualization",
   hr(),
   
   includeHTML("intro.html"),
@@ -88,117 +91,168 @@ shinyUI <- fluidPage(
   includeHTML("intro2.html"),
   br(),
   hr(),
-  tabsetPanel(type = "tabs", id = "tabs",
-              tabPanel("Map",
-                      sidebarLayout(
-                        sidebarPanel(
-                          h4(icon("map-marked-alt"), " Map"),
-                          p("This activity displays 4 fitness-related parameters of Colias in western Colorado. 
-                            The layer can be switched between 'data' and 'elevation' by clicking the button on the top, where 'data' shows the selected parameters and 'elevation' displays just the topography across the range.
-                            Clicking on the map gives you detailed data of the specific location."),
-                          checkboxGroupInput("metric", "Metric to plot", 
-                                             choices = c("Population growth rate", 
-                                                         "Flight activity time (s)", 
-                                                         "   Egg viability (%)    ", 
-                                                         "Body temperature (°C)"),
-                                             selected = "Population growth rate"),
-                          radioButtons("facet", "Facets", choices = c("Wing absorptivity" = "absorp", "Generation" = "gen")),
-                          sliderInput("year", "Year", min = 1950, max = 2099, value = 2020),
-                          selectInput("abs", "Wing absorptivity", choices = seq(0.4, 0.7, 0.05), multiple = TRUE, selected = 0.4),
-                          selectInput("gen", "Generation", choices = c(1, 2, 3), multiple = TRUE, selected = 1)
-                        ),
-                        mainPanel(
-                          br(),
-                          fluidRow(
-                            column(6, switchInput(inputId = "layer", label = "Layer", onLabel = "Data", offLabel = "Elevation", inline = TRUE, value = TRUE, size = "small")),
-                            column(4, offset = 2, materialSwitch("labels", status = "danger", label = "Labels On/Off", value = TRUE),
-)
+  div(
+    id = "viz-wrapper",
+    tabsetPanel(type = "tabs", id = "tabs",
+                tabPanel("Map",
+                        sidebarLayout(
+                          sidebarPanel(
+                            h4(icon("map-marked-alt"), " Map"),
+                            p("This activity displays 4 fitness-related parameters of Colias in western Colorado. 
+                              The layer can be switched between 'data' and 'elevation' by clicking the button on the top, where 'data' shows the selected parameters and 'elevation' displays just the topography across the range.
+                              Clicking on the map gives you detailed data of the specific location."),
+                            actionBttn(
+                              inputId = "tour_map",
+                              label = "Take a tour!", 
+                              style = "material-flat",
+                              color = "success",
+                              size = "xs"
+                            ),
+                            hr(),
+                            
+                            div(
+                              id = "metric-wrapper",
+                              checkboxGroupInput("metric", "Metric to plot", 
+                                                 choices = c("Population growth rate", 
+                                                             "Flight activity time (s)", 
+                                                             "   Egg viability (%)    ", 
+                                                             "Body temperature (°C)"),
+                                                 selected = "Population growth rate")
+                            ),
+                            div(
+                              id = "facet-wrapper",
+                              radioButtons("facet", "Facets", choices = c("Wing absorptivity" = "absorp", "Generation" = "gen"))
+                            ),
+                            div(
+                              id = "year-wrapper",
+                              sliderInput("year", "Year", min = 1950, max = 2099, value = 2020)
+                            ),
+                            div(
+                              id = "abs-wrapper",
+                              uiOutput("absInput")
+                            ),
+                            uiOutput("genInput")
                           ),
-                          verbatimTextOutput("info"),
-                          plotOutput("mymap_gg", click = "plot_click") %>% withSpinner(type = 7)
-                          # leafletOutput("mymap") %>% withSpinner(type = 7)
+                          mainPanel(id = "main",
+                            br(),
+                            fluidRow(
+                              column(3, 
+                                     id = "layer-wrapper", 
+                                     switchInput(inputId = "layer", label = "Layer", onLabel = "Data", offLabel = "Elevation", inline = TRUE, value = TRUE, size = "small")),
+                              column(3, 
+                                     offset = 6, 
+                                     id = "labels-wrapper", 
+                                     materialSwitch("labels", status = "danger", label = "Labels On/Off", value = TRUE))
+                            ),
+                            verbatimTextOutput("info"),
+                            plotOutput("mymap_gg", click = "plot_click") %>% withSpinner(type = 7)
+                            # leafletOutput("mymap") %>% withSpinner(type = 7)
+                          )
                         )
-                      )
-              ),
-              tabPanel("Plot",
-                       sidebarLayout(
-                         sidebarPanel(
-                           h4(icon("chart-bar"), " Plot"),
-                           p("This activity visualizes 4 fitness-related parameters of Colias as a plot. You can plot data across year or thier distributed elevation range, both of which can be colored and faceted by other variables by dragging", icon("glyphicon glyphicon-move", lib = "glyphicon"), "."),
-                           fluidRow(
-
-                             column(6,
-                               tags$div(
-                                 class = "panel panel-default",
-                                 tags$div(
-                                   class = "panel-heading",
-                                   tags$span(class = "glyphicon glyphicon-search"),"Variables"),
-                                 tags$div(
-                                   class = "panel-body",
-                                   id = "sort1",
-                                   coltags
-                                 )
-                               
-                               ),
-                               checkboxGroupInput("yaxis", "Y axis", 
-                                                  choices = c("Population growth rate", 
-                                                              "Flight activity time (s)", 
-                                                              "Egg viability (%)", 
-                                                              "Body temperature (°C)"),
-                                                  selected = "Population growth rate")
-                               
+                ),
+                tabPanel("Plot",
+                         sidebarLayout(
+                           sidebarPanel(
+                             h4(icon("chart-bar"), " Plot"),
+                             p("This activity visualizes 4 fitness-related parameters of Colias as a plot. 
+                               You can plot data across year or thier distributed elevation range, both of which can be colored and faceted by other variables by dragging", 
+                               icon("glyphicon glyphicon-move", lib = "glyphicon"), "."),
+                             actionBttn(
+                               inputId = "tour_plot",
+                               label = "Take a tour!", 
+                               style = "material-flat",
+                               color = "success",
+                               size = "xs"
                              ),
-                             column(5,
-                               tags$div(
-                                 class = "panel panel-default",
+                             hr(),
+                             fluidRow(id = "panel-wrapper",
+                               column(6,
                                  tags$div(
-                                   class = "panel-heading",
-                                   tags$span(class = "glyphicon glyphicon-stats"),
-                                   "x axis"
+                                   class = "panel panel-default",
+                                   tags$div(
+                                     class = "panel-heading",
+                                     tags$span(class = "glyphicon glyphicon-search"),"Variables"),
+                                   tags$div(
+                                     class = "panel-body",
+                                     id = "sort1",
+                                     coltags
+                                   )
+                                 
                                  ),
-                                 tags$div(
-                                   class = "panel-body",
-                                   id = "sort2"
-                                 )
+                                 checkboxGroupInput("yaxis", "Y axis", 
+                                                    choices = c("Population growth rate", 
+                                                                "Flight activity time (s)", 
+                                                                "Egg viability (%)", 
+                                                                "Body temperature (°C)"),
+                                                    selected = "Population growth rate")
+                                 
                                ),
-
-                               tags$div(
-                                 class = "panel panel-default",
+                               column(5,
                                  tags$div(
-                                   class = "panel-heading",
-                                   tags$span(class = "glyphicon glyphicon-tint"),
-                                   "Color"
+                                   class = "panel panel-default",
+                                   tags$div(
+                                     class = "panel-heading",
+                                     tags$span(class = "glyphicon glyphicon-stats"),
+                                     "x axis"
+                                   ),
+                                   tags$div(
+                                     class = "panel-body",
+                                     id = "sort2"
+                                   )
                                  ),
+  
                                  tags$div(
-                                   class = "panel-body",
-                                   id = "sort3"
-                                 )
-                               ),
-
-                               tags$div(
-                                 class = "panel panel-default",
-                                 tags$div(
-                                   class = "panel-heading",
-                                   tags$span(class = "glyphicon glyphicon-th-list"),
-                                   "Facets"
+                                   class = "panel panel-default",
+                                   tags$div(
+                                     class = "panel-heading",
+                                     tags$span(class = "glyphicon glyphicon-tint"),
+                                     "Color"
+                                   ),
+                                   tags$div(
+                                     class = "panel-body",
+                                     id = "sort3"
+                                   )
                                  ),
+  
                                  tags$div(
-                                   class = "panel-body",
-                                   id = "sort4"
+                                   class = "panel panel-default",
+                                   tags$div(
+                                     class = "panel-heading",
+                                     tags$span(class = "glyphicon glyphicon-th-list"),
+                                     "Facets"
+                                   ),
+                                   tags$div(
+                                     class = "panel-body",
+                                     id = "sort4"
+                                   )
                                  )
                                )
-                             )),
+                             ),
+                               
 
-                             uiOutput(outputId = 'widgetInput'),
-                             checkboxInput("trendline", "Show Trendline")
-                         ),
-                         mainPanel(
-                           plotOutput("plot") %>% withSpinner(type = 7)
+                                uiOutput(outputId = 'widgetInput'),
+                             div(
+                               id = "variables-wrapper",
+                               selectInput("absPlot", "Wing absorptivity", choices = seq(0.4, 0.7, 0.05), selected = 0.4, multiple = TRUE),
+                               selectInput("genPlot", "Generation", choices = c(1, 2, 3), selected = 1, multiple = TRUE)
+                             ),
+                             div(
+                               id = "trend-wrapper", 
+                               checkboxInput("trendline", "Show Trendline")
+                             )
+                           ),
+                           
+                           mainPanel(
+                             div(
+                               id = "plot-wrapper",
+                               plotOutput("plot") %>% withSpinner(type = 7)
+                             )
+                           )
                          )
-                       )
-                       
-              )
-              
+                         
+                )
+                
+    )
   ),
   sortable_js(
     "sort1",
@@ -253,5 +307,8 @@ shinyUI <- fluidPage(
   bsTooltip("sort2", "Drag 'Year' or 'Elevation' here for x axis.", placement = "bottom", trigger = "hover", options = NULL),
   bsTooltip("sort3", "Each value of this parameter will be colored differently on the same plot.", placement = "bottom", trigger = "hover", options = NULL),
   bsTooltip("sort4", "Each value of this parameter will make a new plot side by side.", placement = "bottom", trigger = "hover", options = NULL),
-  bsTooltip("gen", "1st, 2nd or 3rd generation of the given year.", placement = "bottom", trigger = "hover", options = NULL)
+  bsTooltip("gen", "1st, 2nd or 3rd generation of the given year.", placement = "bottom", trigger = "hover", options = NULL),
+  bsTooltip("genPlot", "1st, 2nd or 3rd generation of the given year.", placement = "bottom", trigger = "hover", options = NULL),
+  bsTooltip("absPlot", "Larger value correspond to darker coloration.", placement = "bottom", trigger = "hover", options = NULL)
+  
 )

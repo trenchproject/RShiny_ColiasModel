@@ -1,4 +1,5 @@
 source("functions.R", local = TRUE)
+source("cicerone.R", local = TRUE)
 
 Colias <- readRDS("Colias_complete.rds")
 COelev <- read.csv("COelev.csv")
@@ -79,6 +80,11 @@ combined$dateHour <- hours
 
 shinyServer <- function(input, output, session) {
   
+  observeEvent(input$tour_map, guide_map$init()$start())
+  
+  observeEvent(input$tour_plot, guide_plot$init()$start())
+  
+  
   output$plot_intro <- renderPlot({
     seq <- rep(seq.Date(from = Sys.Date() - x - 6, to = Sys.Date() - x - 8 + length(hourlyTemp), by = "1 day"), each = 24)
     doy = day_of_year(seq)
@@ -120,15 +126,13 @@ shinyServer <- function(input, output, session) {
     validate(
       need(input$sort_x == "Year" || input$sort_x == "Elevation", "")
     )
-    genInput <- tipify(selectInput("genPlot", "Generation", choices = c(1, 2, 3), selected = 1, multiple = TRUE), "1st, 2nd or 3rd generation of the given year.")
-    absInput <- tipify(selectInput("absPlot", "Wing absorptivity", choices = seq(0.4, 0.7, 0.05), selected = 0.4, multiple = TRUE), "Larger value correspond to darker coloration.")
     elevInput <- sliderInput("elev", "Elevation (m)", min = min(Colias$elev), max = max(Colias$elev), value = c(min(Colias$elev), max(Colias$elev)))
     
     if(input$sort_x == "Elevation") {
-      yearInput <- sliderInput(inputId = "yearPlot", "Year", min = 1950, max = 2099, value = 2020)
+      yearInput <- sliderInput("yearPlot", "Year", min = 1950, max = 2099, value = 2020)
       if (!is.null(input$sort_col) || !is.null(input$sort_facet)) {
         if (input$sort_col == "Year" || length(input$sort_col) != 0 || input$sort_facet == "Year" || length(input$sort_facet) != 0) {
-          yearInput <- selectInput(inputId = "yearPlot", "Year", choices = c(1950:2099), selected = 2020, multiple = TRUE)
+          yearInput <- selectInput("yearPlot", "Year", choices = c(1950:2099), selected = 2020, multiple = TRUE)
         }
       }
     } else {  # sort_x == "Year"
@@ -139,7 +143,7 @@ shinyServer <- function(input, output, session) {
         }
       }
     }
-    list(elevInput, yearInput, absInput, genInput)
+    list(elevInput, yearInput)
   })
 
   # Data filter for map
@@ -182,7 +186,7 @@ shinyServer <- function(input, output, session) {
   output$info <- renderText({
     validate(
       need(input$plot_click, "Click on the map to see detailed values"),
-      need(length(input$metric) < 2, "Select one metric")
+      need(!input$layer || length(input$metric) < 2, "Select one metric")
     )
     if (input$layer) {
       elev <- round(colMeans(nearPoints(data_gg(), input$plot_click, xvar = "lon", yvar = "lat")["elev"]), digits = 0)
@@ -359,6 +363,20 @@ shinyServer <- function(input, output, session) {
     p
   })
   
+  output$absInput <- renderUI({
+    if (input$facet == "gen") {
+      selectInput("abs", "Wing absorptivity", choices = seq(0.4, 0.7, 0.05), multiple = FALSE, selected = 0.4)
+    } else {
+      selectInput("abs", "Wing absorptivity", choices = seq(0.4, 0.7, 0.05), multiple = TRUE, selected = 0.4)
+    }
+  })
 
+  output$genInput <- renderUI({
+    if (input$facet == "gen") {
+      selectInput("gen", "Generation", choices = c(1, 2, 3), multiple = TRUE, selected = 1)
+    } else {
+      selectInput("gen", "Generation", choices = c(1, 2, 3), multiple = FALSE, selected = 1)
+    }
+  })
 
 }
