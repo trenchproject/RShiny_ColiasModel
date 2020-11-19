@@ -8,6 +8,9 @@ variables <- c("Year" = "year", "Absorptivity" = "absorp", "Generation" = "gen",
 elevCat <- c("1392 ~ 1700", "1701 ~ 2000", "2001 ~ 2300", "2301 ~ 2600", "2601 ~ 2900", "2901 ~ 3198")
 load(file = "my_map.RData")
 
+params <- c("Population growth rate", "Flight activity time (s)", "Egg viability (%)", "Body temperature (°C)")
+names(params) <- c("lambda", "FAT", "eggV", "temp")
+
 x <- 1
 t <- 0
 
@@ -28,22 +31,6 @@ tmin <- ncdc(datasetid = 'GHCND',
              startdate = Sys.Date() - x - 6, 
              enddate = Sys.Date() - x, 
              datatypeid = "TMIN")
-
-
-
-# tmax <- ncdc(datasetid = 'GHCND', 
-#              stationid = "GHCND:USC00051959", 
-#              token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", 
-#              startdate = Sys.Date() - 8, 
-#              enddate = Sys.Date() - 2, 
-#              datatypeid = "TMAX")
-# 
-# tmin <- ncdc(datasetid = 'GHCND', 
-#              stationid = "GHCND:USC00051959", 
-#              token = "MpEroBAcjEIOFDbJdJxErtjmbEnLVtbq", 
-#              startdate = Sys.Date() - 8, 
-#              enddate = Sys.Date() - 2, 
-#              datatypeid = "TMIN")
 
 temp <- as.data.frame(tmax$data) %>% dplyr::select(date, value) %>% 
   set_colnames(c("date", "Tmax")) %>% 
@@ -84,7 +71,8 @@ shinyServer <- function(input, output, session) {
   
   observeEvent(input$tour_plot, guide_plot$init()$start())
   
-  
+  #____________________________________________________________________________________________
+  # First intro plot
   output$plot_intro <- renderPlot({
     seq <- rep(seq.Date(from = Sys.Date() - x - 6, to = Sys.Date() - x - 8 + length(hourlyTemp), by = "1 day"), each = 24)
     doy = day_of_year(seq)
@@ -121,56 +109,26 @@ shinyServer <- function(input, output, session) {
             legend.title = element_blank())
   })
   
-  # widgets to show
-  output$widgetInput <- renderUI({
-    validate(
-      need(input$sort_x == "Year" || input$sort_x == "Elevation", "")
-    )
-    elevInput <- sliderInput("elev", "Elevation (m)", min = min(Colias$elev), max = max(Colias$elev), value = c(min(Colias$elev), max(Colias$elev)))
-    
-    if(input$sort_x == "Elevation") {
-      yearInput <- sliderInput("yearPlot", "Year", min = 1950, max = 2099, value = 2020)
-      if (!is.null(input$sort_col) || !is.null(input$sort_facet)) {
-        if (input$sort_col == "Year" || length(input$sort_col) != 0 || input$sort_facet == "Year" || length(input$sort_facet) != 0) {
-          yearInput <- selectInput("yearPlot", "Year", choices = c(1950:2099), selected = 2020, multiple = TRUE)
-        }
-      }
-    } else {  # sort_x == "Year"
-      yearInput <- sliderInput("yearPlot", "Year", min = 1950, max = 2099, value = c(1950, 2099))
-      if (!is.null(input$sort_col) && length(input$sort_col) != 0) {
-        if (input$sort_col == "Elevation") {
-          elevInput <- selectInput("elev", "Elevation (m)", choices = elevCat, selected = "1392 ~ 1700", multiple = TRUE)
-        }
-      }
-    }
-    list(elevInput, yearInput)
-  })
-
-  # Data filter for map
+  #_________________________________________________________________________________________
+  # First tab: Map
   
-  # data <- reactive({
-  #   df <- Colias %>% filter(year == input$year & absorp %in% input$abs & gen %in% input$gen) %>% na.omit()
-  #   df[,c("lat", "lon", paste(shortName[input$metric]))] %>% na.omit()
-  # })
-  # 
-  # 
-  # output$mymap <- renderLeaflet({
-  #   filtered <- data()
-  #   coordinates(filtered)=~lon+lat
-  #   proj4string(filtered)=CRS("+init=epsg:4326") # set it to lat-long
-  #   gridded(filtered) = TRUE
-  # 
-  #   dfRaster <- raster(filtered)
-  #   mapStates = map("state", fill = TRUE, plot = FALSE)
-  #   pal <- colorNumeric(c("Red", "Orange"), values(dfRaster),
-  #                       na.color = "transparent")
-  #   
-  #   leaflet(data = mapStates) %>%
-  #     addProviderTiles(providers$Stamen.Terrain) %>%
-  #     setView(lng = (min(Colias$lon) + max(Colias$lon)) / 2, lat = (min(Colias$lat) + max(Colias$lat)) / 2, zoom = 6) %>%
-  #     addRasterImage(dfRaster, opacity = 0.7, colors = pal) %>%
-  #     addLegend(pal = pal, values = values(dfRaster), title = input$metric[1], position = "bottomright")
-  # })
+  # Absorptivity selectInput
+  output$absInput <- renderUI({
+    if (input$facet == "gen") {
+      selectInput("abs", "Wing absorptivity", choices = seq(0.4, 0.7, 0.05), multiple = FALSE, selected = 0.4)
+    } else {
+      selectInput("abs", "Wing absorptivity", choices = seq(0.4, 0.7, 0.05), multiple = TRUE, selected = 0.4)
+    }
+  })
+  
+  # Generation selectInput
+  output$genInput <- renderUI({
+    if (input$facet == "gen") {
+      selectInput("gen", "Generation", choices = c(1, 2, 3), multiple = TRUE, selected = 1)
+    } else {
+      selectInput("gen", "Generation", choices = c(1, 2, 3), multiple = FALSE, selected = 1)
+    }
+  })
   
   # data filter for ggplot
   data_gg <- reactive({
@@ -182,7 +140,7 @@ shinyServer <- function(input, output, session) {
 
   })
   
-  
+  # Verbatim text output for when clicked on the map
   output$info <- renderText({
     validate(
       need(input$plot_click, "Click on the map to see detailed values"),
@@ -198,6 +156,7 @@ shinyServer <- function(input, output, session) {
     }
   })
   
+  # Setting up function for map
   defaultPlot <- function(param, axis = FALSE) {
     p <- ggmap(map) +
       xlab("Longitude (°)") + ylab("Latitude (°)") + theme_bw( ) +
@@ -222,6 +181,7 @@ shinyServer <- function(input, output, session) {
     return(p)
   }
   
+  # Output map height
   height <- reactive({
     if(input$layer) {
       n <- length(input$metric) * 150 + 250
@@ -230,6 +190,7 @@ shinyServer <- function(input, output, session) {
     }
   })
   
+  # Main map
   output$mymap_gg <- renderPlot({
     validate(
       need(input$metric, "Select a metric to map")
@@ -275,6 +236,34 @@ shinyServer <- function(input, output, session) {
   }, height = height)
 
   
+  #______________________________________________________________________________________
+  # Second tab: Plot
+  
+  # widgets to show
+  output$widgetInput <- renderUI({
+    validate(
+      need(input$sort_x == "Year" || input$sort_x == "Elevation", "")
+    )
+    elevInput <- sliderInput("elev", "Elevation (m)", min = min(Colias$elev), max = max(Colias$elev), value = c(min(Colias$elev), max(Colias$elev)))
+    
+    if(input$sort_x == "Elevation") {
+      yearInput <- sliderInput("yearPlot", "Year", min = 1950, max = 2099, value = 2020)
+      if (!is.null(input$sort_col) || !is.null(input$sort_facet)) {
+        if (input$sort_col == "Year" || length(input$sort_col) != 0 || input$sort_facet == "Year" || length(input$sort_facet) != 0) {
+          yearInput <- selectInput("yearPlot", "Year", choices = c(1950:2099), selected = 2020, multiple = TRUE)
+        }
+      }
+    } else {  # sort_x == "Year"
+      yearInput <- sliderInput("yearPlot", "Year", min = 1950, max = 2099, value = c(1950, 2099))
+      if (!is.null(input$sort_col) && length(input$sort_col) != 0) {
+        if (input$sort_col == "Elevation") {
+          elevInput <- selectInput("elev", "Elevation (m)", choices = elevCat, selected = "1392 ~ 1700", multiple = TRUE)
+        }
+      }
+    }
+    list(elevInput, yearInput)
+  })
+  
   # Data for plot when x axis is Year
   yearData <- reactive({
     validate(
@@ -289,7 +278,6 @@ shinyServer <- function(input, output, session) {
       df <- df %>% na.omit() %>% 
         group_by(year, absorp, gen) %>%
         summarise(lambda = mean(lambda), FAT = mean(FAT), eggV = mean(eggV), temp = mean(temp))
-      
     } else {  # when elevation is a select input (only when x = year & col = elevation)
       Colias$elevRange <- NA  # new column named elevRange
       for (i in 1:length(input$elev)) {
@@ -314,11 +302,13 @@ shinyServer <- function(input, output, session) {
       gather(Param, value, shortName[input$yaxis])
   })
   
+  # Main plot
   output$plot <- renderPlot({
     validate(
       need(input$sort_x == "Year" || input$sort_x == "Elevation", "Drag \"Year\" or \"Elevation\" to x axis"),
       need(input$yaxis, "Select a metric for y axis")
     )
+    
     if (!is.null(input$sort_col) && length(input$sort_col) != 0) {  # with color
       
       color <- paste("factor(", variables[input$sort_col], ")")
@@ -342,7 +332,7 @@ shinyServer <- function(input, output, session) {
       }
     }
     
-    p <- p + geom_point() + theme_bw(base_size = 16)
+    p <- p + geom_point() + theme_bw(base_size = 16) + ylab("")
     
     if (!is.null(input$sort_facet) && length(input$sort_facet) != 0) {  # add facets
       if(length(input$yaxis) == 1) {
@@ -350,9 +340,9 @@ shinyServer <- function(input, output, session) {
       } else {
         xFac <- "Param ~"
       }
-      p <- p + facet_grid(as.formula(paste(xFac, variables[input$sort_facet])), scales = "free", switch = "y")
-    } else if (length(input$yaxis) != 1) {
-      p <- p + facet_grid(Param ~ . , scales = "free", switch = "y")
+      p <- p + facet_grid(as.formula(paste(xFac, variables[input$sort_facet])), scales = "free", switch = "y", labeller = labeller(Param = params))
+    } else if (length(input$yaxis) > 1) {
+      p <- p + facet_grid(Param ~ . , scales = "free", switch = "y", labeller = labeller(Param = params))
     } 
     if (input$trendline) {  # add trendlines
       p <- p + geom_smooth(method="loess", se=FALSE)
@@ -362,21 +352,6 @@ shinyServer <- function(input, output, session) {
     }
     p
   })
-  
-  output$absInput <- renderUI({
-    if (input$facet == "gen") {
-      selectInput("abs", "Wing absorptivity", choices = seq(0.4, 0.7, 0.05), multiple = FALSE, selected = 0.4)
-    } else {
-      selectInput("abs", "Wing absorptivity", choices = seq(0.4, 0.7, 0.05), multiple = TRUE, selected = 0.4)
-    }
-  })
 
-  output$genInput <- renderUI({
-    if (input$facet == "gen") {
-      selectInput("gen", "Generation", choices = c(1, 2, 3), multiple = TRUE, selected = 1)
-    } else {
-      selectInput("gen", "Generation", choices = c(1, 2, 3), multiple = FALSE, selected = 1)
-    }
-  })
 
 }

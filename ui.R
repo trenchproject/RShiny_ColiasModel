@@ -182,7 +182,7 @@ shinyUI <- fluidPage(
                                  checkboxGroupInput("yaxis", "Y axis", 
                                                     choices = c("Population growth rate", 
                                                                 "Flight activity time (s)", 
-                                                                "Egg viability (%)", 
+                                                                "   Egg viability (%)    ", 
                                                                 "Body temperature (°C)"),
                                                     selected = "Population growth rate")
                                  
