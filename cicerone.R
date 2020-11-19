@@ -4,7 +4,7 @@ guide_map <- Cicerone$
   step(
     el = "viz-wrapper",
     title = "Visualization",
-    description = "Welcome to our RMBL phenology visualization tool. Notice there are three tabs on the top. We will go over them one by one. Click next to get started."
+    description = "Welcome to our Colias model visualization tool. This tour will go over the first tab. Click next to get started."
   )$
   step(
     el = "mymap_gg",
