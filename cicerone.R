@@ -15,12 +15,13 @@ guide_map <- Cicerone$
   step(
     el = "info",
     title = "Values",
-    description = "It shows the elevation and the population growth rate at that specific location."
+    description =HTML("It shows the elevation and the population growth rate at that specific location.
+                      <br>If it says NaN, try going back and click somewhere else on the map.")
   )$
   step(
     el = "labels-wrapper",
     title = "Labels",
-    description = "You can show and hide the location names. Turn them off for now."
+    description = "You can show and hide the location names. Turn them off for now and hit next."
   )$
   step(
     el = "layer-wrapper",
@@ -31,7 +32,7 @@ guide_map <- Cicerone$
     el = "main",
     title = "Topography",
     description = HTML("The map just shows the topography, which was covered by the data layers. Sometimes, it is useful to understand the geometry of the area.
-                       Click on the switch again to show the data back and move forward.")
+                       Click on the switch again to show the data layer back on and move forward.")
   )$
   step(
     el = "metric-wrapper",

@@ -69,6 +69,14 @@ shinyServer <- function(input, output, session) {
   
   observeEvent(input$tour_map, guide_map$init()$start())
   
+  observeEvent(input$reset_map, {
+    reset("viz-wrapper")
+  })
+  
+  observeEvent(input$reset_plot, {
+    reset("viz-wrapper")
+  })
+  
   observeEvent(input$tour_plot, guide_plot$init()$start())
   
   #____________________________________________________________________________________________

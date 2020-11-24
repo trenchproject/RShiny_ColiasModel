@@ -102,6 +102,13 @@ shinyUI <- fluidPage(
                               The layer can be switched between 'data' and 'elevation' by clicking the button on the top, where 'data' shows the selected parameters and 'elevation' displays just the topography across the range.
                               Clicking on the map gives you detailed data of the specific location."),
                             actionBttn(
+                              inputId = "reset_map",
+                              label = "Reset", 
+                              style = "material-flat",
+                              color = "danger",
+                              size = "xs"
+                            ),
+                            actionBttn(
                               inputId = "tour_map",
                               label = "Take a tour!", 
                               style = "material-flat",
@@ -157,6 +164,13 @@ shinyUI <- fluidPage(
                              p("This activity visualizes 4 fitness-related parameters of Colias as a plot. 
                                You can plot data across year or thier distributed elevation range, both of which can be colored and faceted by other variables by dragging", 
                                icon("glyphicon glyphicon-move", lib = "glyphicon"), "."),
+                             actionBttn(
+                               inputId = "reset_plot",
+                               label = "Reset", 
+                               style = "material-flat",
+                               color = "danger",
+                               size = "xs"
+                             ),
                              actionBttn(
                                inputId = "tour_plot",
                                label = "Take a tour!", 
@@ -309,6 +323,8 @@ shinyUI <- fluidPage(
   bsTooltip("sort4", "Each value of this parameter will make a new plot side by side.", placement = "bottom", trigger = "hover", options = NULL),
   bsTooltip("gen", "1st, 2nd or 3rd generation of the given year.", placement = "bottom", trigger = "hover", options = NULL),
   bsTooltip("genPlot", "1st, 2nd or 3rd generation of the given year.", placement = "bottom", trigger = "hover", options = NULL),
-  bsTooltip("absPlot", "Larger value correspond to darker coloration.", placement = "bottom", trigger = "hover", options = NULL)
+  bsTooltip("absPlot", "Larger value correspond to darker coloration.", placement = "bottom", trigger = "hover", options = NULL),
+  bsTooltip("reset_map", "If you have already changed the variables, reset them to default here before starting the tour."),
+  bsTooltip("reset_plot", "If you have already changed the variables, reset them to default here before starting the tour.")
   
 )
