@@ -5,10 +5,10 @@ RShiny_ColiasModel is an interactive shiny app that allows any user to visualize
 ## Prerequisites for opening in Rstudio
 Git and Rstudio ([Instructions](https://resources.github.com/whitepapers/github-and-rstudio/))  
 Installation of the following R packages:
-shiny, magrittr, shinythemes, shinyWidgets, ggplot2, dplyr, leaflet, ggmap, maps, raster, sp, rgdal, viridis, shinycssloaders, shinyjs, sortable, rnoaa, chillR, reshape2, tidyr, gridExtra, shinyBS
+shiny, magrittr, shinythemes, shinyWidgets, ggplot2, dplyr, leaflet, ggmap, maps, raster, sp, rgdal, viridis, shinycssloaders, shinyjs, sortable, rnoaa, chillR, reshape2, tidyr, gridExtra, shinyBS, cicerone
 
 ```
-pkgs <- c("shiny", "magrittr", "ggplot2", "dplyr", "leaflet", "ggmap", "maps", "raster", "sp", "rgdal", "viridis", "shinythemes", "shinyWidgets", "shinycssloaders", "shinyjs", "sortable", "rnoaa", "chillR", "reshape2", "tidyr", "gridExtra", "shinyBS")
+pkgs <- c("shiny", "magrittr", "ggplot2", "dplyr", "leaflet", "ggmap", "maps", "raster", "sp", "rgdal", "viridis", "shinythemes", "shinyWidgets", "shinycssloaders", "shinyjs", "sortable", "rnoaa", "chillR", "reshape2", "tidyr", "gridExtra", "shinyBS", "cicerone")
 
 lapply(pkgs, FUN = function(x) {
     if (!require(x, character.only = TRUE)) {
