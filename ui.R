@@ -58,22 +58,24 @@ Colias <- readRDS("Colias_complete.rds")
 shinyUI <- fluidPage(
   use_cicerone(),
   theme = shinytheme("united"),
-  setBackgroundColor(color = "#F5F5F5"), 
+  setBackgroundColor(color = "#C7DAE0"), 
   useShinyjs(),
   titlePanel(
-    div(tags$img(src="Butterfly_icon.png", height = 50), 
-        "Colias Visualization")
+    div(tags$img(src="TRENCH_Logo_Circle-TrenchMap.png", height = 100), 
+        "Butterfly wing coloration in changing climates")
   ),
-  title = "Colias Visualization",
+  title = "Butterfly wing coloration in changing environments",
   hr(),
   
   includeHTML("intro.html"),
   br(), br(),
-  h4("Quick glance at Colias body temperatures ", icon("thermometer-half")),
-  p("Let's take a look at how butterfly body temperatures fluctuate during the day in comparison to the air 
-    temperature in the past week. Change the weather conditon and absorptivity to see how it affects their body temperatures. Larger absoprtivity correlates to darker wings."),
+  h4("Consequences of wing coloration for butterfly body temperatures ", icon("thermometer-half")),
+  p("Let's take a look at how butterfly body temperatures are predicted to differ from air 
+    temperatures over the past week in Creasted Butte, CO at elevation of 2700m (38.9°, -107.0°). 
+    You can change the proportion of solar radiation that is absorped by the wings from 40% (lighter wings) to 70% (darker wings). 
+    You can also select whether sky conditions are clear or cloudy. How do predicted body temperatures change?"),
   p("Minimum and maximum daily temperatures are obtained at a weather station in Crested Butte, CO,
-    at elevation of 2700m (38.9°, -107.0°), and converted to hourly temperatures using functions from chillR.", code("TrenchR::Tb_butterfly"), "function was then used to compute the operative temperature of butterflies. 
+    , and converted to hourly temperatures using functions from chillR.", code("TrenchR::Tb_butterfly"), "function was then used to compute the operative temperature of butterflies. 
     Wind speed is set at 1 m/s, and it models butterfly body temperature in the sun during the day unless overcast. 
     Fur thickness = 0.82 mm and thorax diameter = 3.6 mm are used based on measurements for", em("C. eriphyle"), "at several sites in Colorado (Kingsolver, 1983).
     Daily solar irradiance is set to 8000 W/m", tags$sup("2"), "for a clear day, 5000 W/m", tags$sup("2"), "for a partly cloudy day and 2000 W/m", tags$sup("2"), "for a cloudy day and", code("TrenchR::diurnal_radiation_variation"), "function converted it into hourly solar radiation estimates."),
