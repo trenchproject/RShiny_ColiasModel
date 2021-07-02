@@ -3,7 +3,7 @@ source("cicerone.R", local = TRUE)
 
 Colias <- readRDS("Colias_complete.rds")
 COelev <- read.csv("COelev.csv")
-shortName = c("Population growth rate" = "lambda", "Flight activity time (s)" = "FAT", "   Egg viability (%)    " = "eggV", "Body temperature (°C)" = "temp")
+shortName = c("Population growth rate (lambda)" = "lambda", "Flight activity time (h)" = "FAT", "   Egg viability (%)    " = "eggV", "Body temperature (°C)" = "temp")
 variables <- c("Year" = "year", "Absorptivity" = "absorp", "Generation" = "gen", "Elevation" = "elev")
 elevCat <- c("1392 ~ 1700", "1701 ~ 2000", "2001 ~ 2300", "2301 ~ 2600", "2601 ~ 2900", "2901 ~ 3198")
 load(file = "my_map.RData")
@@ -93,24 +93,33 @@ shinyServer <- function(input, output, session) {
       }
     }
     
+    #set zs to plant height
+    Tas= mapply(air_temp_profile, combined$value, T_s=combined$value+5, u_r=0.1, zr=2, z0=0.02, z=0.02)
+    
+    #estimate radiation
+    t0= solar_noon(lon=mean(Colias$lon), doy=doy[1])
+    
+    rad= mapply(direct_solar_radiation, hour, lat = mean(Colias$lat), doy=doy[1], elev= mean(Colias$elev),t0=t0, method="Campbell 1977")
+    
+    #partition radiation
     if (input$weather == "Clear") {
-      solrad <- 8000
+      diff= partition_solar_radiation(method="Erbs", kt=0.8, lat=mean(Colias$lat))
     } else if (input$weather == "Partly cloudy") {
-      solrad <- 5000
+      diff= partition_solar_radiation(method="Erbs", kt=0.7, lat=mean(Colias$lat))
     } else {
-      solrad <- 2000
+      diff= partition_solar_radiation(method="Erbs", kt=0.5, lat=mean(Colias$lat))
       shade = FALSE
     }
     
-    rad <- diurnal_radiation_variation(doy, solrad = solrad, hour = hour, lon = mean(Colias$lon), lat = mean(Colias$lat))
-    rad[rad < 0] <- 0
+    rad.dir <- rad*(1-diff)
+    rad.dif <- rad*(diff)
 
-    colors <- c("Environmental" = "black", "Operative" = "blue")
+    colors <- c("Air" = "black", "Body" = "blue")
     
     Tb <- mapply(Tb_butterfly, 
-                 combined$value, combined$value+5, Tg_sh = combined$value-5, u = 1, H_sdir = rad, H_sdif = 400, z = 30, D=0.36, delta=0.82, alpha=as.numeric(input$abs_intro), r_g=0.3, shade = shade)
+                 Tas, Tas+5, Tg_sh = Tas, u = 0.1, H_sdir = rad.dir, H_sdif = rad.dif, z = z, D=0.36, delta=0.82, alpha=as.numeric(input$abs_intro), r_g=0.3, shade = shade)
     
-    ggplot() + geom_line(aes(x = combined$dateHour, y = combined$value, color = "Environmental"), size = 1.3) + geom_line(aes(x = combined$dateHour, y = Tb, color = "Operative"), size = 1.3) +
+    ggplot() + geom_line(aes(x = combined$dateHour, y = combined$value, color = "Air"), size = 1.3) + geom_line(aes(x = combined$dateHour, y = Tb, color = "Body"), size = 1.3) +
       xlab("Day") + ylab("Temperature (°C)") + theme_bw() + ggtitle("C. eriphyle body temperatures in the past week") +
       scale_color_manual(values = colors) +
       theme(plot.title = element_text(size = 18), axis.text = element_text(size = 13), axis.title = element_text(size = 16), legend.text = element_text(size = 13), 
@@ -123,9 +132,9 @@ shinyServer <- function(input, output, session) {
   # Absorptivity selectInput
   output$absInput <- renderUI({
     if (input$facet == "gen") {
-      selectInput("abs", "Wing absorptivity", choices = seq(0.4, 0.7, 0.05), multiple = FALSE, selected = 0.4)
+      selectInput("abs", "Wing absorptivity (%)", choices = seq(0.4, 0.7, 0.05), multiple = FALSE, selected = 0.4)
     } else {
-      selectInput("abs", "Wing absorptivity", choices = seq(0.4, 0.7, 0.05), multiple = TRUE, selected = 0.4)
+      selectInput("abs", "Wing absorptivity (%)", choices = seq(0.4, 0.7, 0.05), multiple = TRUE, selected = 0.4)
     }
   })
   
@@ -255,14 +264,14 @@ shinyServer <- function(input, output, session) {
     elevInput <- sliderInput("elev", "Elevation (m)", min = min(Colias$elev), max = max(Colias$elev), value = c(min(Colias$elev), max(Colias$elev)))
     
     if(input$sort_x == "Elevation") {
-      yearInput <- sliderInput("yearPlot", "Year", min = 1950, max = 2099, value = 2020)
+      yearInput <- sliderInput("yearPlot", "Year", min = 1950, max = 2099, value = 2020, sep = "")
       if (!is.null(input$sort_col) || !is.null(input$sort_facet)) {
         if (input$sort_col == "Year" || length(input$sort_col) != 0 || input$sort_facet == "Year" || length(input$sort_facet) != 0) {
-          yearInput <- selectInput("yearPlot", "Year", choices = c(1950:2099), selected = 2020, multiple = TRUE)
+          yearInput <- selectInput("yearPlot", "Year", choices = c(1950:2099), selected = 2020, multiple = TRUE, sep = "")
         }
       }
     } else {  # sort_x == "Year"
-      yearInput <- sliderInput("yearPlot", "Year", min = 1950, max = 2099, value = c(1950, 2099))
+      yearInput <- sliderInput("yearPlot", "Year", min = 1950, max = 2099, value = c(1950, 2099), sep = "")
       if (!is.null(input$sort_col) && length(input$sort_col) != 0) {
         if (input$sort_col == "Elevation") {
           elevInput <- selectInput("elev", "Elevation (m)", choices = elevCat, selected = "1392 ~ 1700", multiple = TRUE)

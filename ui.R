@@ -62,27 +62,28 @@ shinyUI <- fluidPage(
   useShinyjs(),
   titlePanel(
     div(tags$img(src="TRENCH_Logo_Circle-TrenchMap.png", height = 100), 
-        "Butterfly wing coloration in changing climates")
+        "Butterfly wing coloration and population responses to climate change")
   ),
-  title = "Butterfly wing coloration in changing environments",
+  title = "Butterfly wing coloration and population responses to climate change",
   hr(),
   
   includeHTML("intro.html"),
   br(), br(),
-  h4("Consequences of wing coloration for butterfly body temperatures ", icon("thermometer-half")),
-  p("Let's take a look at how butterfly body temperatures are predicted to differ from air 
-    temperatures over the past week in Creasted Butte, CO at elevation of 2700m (38.9°, -107.0°). 
-    You can change the proportion of solar radiation that is absorped by the wings from 40% (lighter wings) to 70% (darker wings). 
+  h3("Wing coloration alters butterfly body temperatures ", icon("thermometer-half")),
+  p("Let's take a look at how butterfly body temperatures differed from air 
+    temperatures over the past week in Crested Butte, CO at elevation of 2700m (38.9°, -107.0°). 
+    You can change the proportion of solar radiation that is absorbed by the wings from 0.4 (lighter wings) to 0.7 (darker wings). 
     You can also select whether sky conditions are clear or cloudy. How do predicted body temperatures change?"),
-  p("Minimum and maximum daily temperatures are obtained at a weather station in Crested Butte, CO,
-    , and converted to hourly temperatures using functions from chillR.", code("TrenchR::Tb_butterfly"), "function was then used to compute the operative temperature of butterflies. 
-    Wind speed is set at 1 m/s, and it models butterfly body temperature in the sun during the day unless overcast. 
-    Fur thickness = 0.82 mm and thorax diameter = 3.6 mm are used based on measurements for", em("C. eriphyle"), "at several sites in Colorado (Kingsolver, 1983).
-    Daily solar irradiance is set to 8000 W/m", tags$sup("2"), "for a clear day, 5000 W/m", tags$sup("2"), "for a partly cloudy day and 2000 W/m", tags$sup("2"), "for a cloudy day and", code("TrenchR::diurnal_radiation_variation"), "function converted it into hourly solar radiation estimates."),
+  p(strong("How do we estimate body temperatures?"), "Minimum and maximum daily temperatures are retrieved from a weather station and converted to hourly temperatures using functions from chillR. We then use a microclimate model to scale temperatures to 
+    plant height. An energy budget function ", 
+  code("TrenchR::Tb_butterfly"), "was then used to compute how butterflies exhange heat with their environment and predict their body temperature. We assume ",
+  em("Colias eriphyle"), "butterflies are in the sun with wind
+  speeds of 0.1 m/s, have a fur thicknesses of 0.82 mm and a thorax diameter of 3.6 mm. We use the ", code("TrenchR::direct_solar_radiation"), " function to estimate hourly
+  direct solar radiation and then estimate the fraction of radiation that is diffuse based on whether the weather is clear or cloudy."),
   
   sidebarLayout(
     sidebarPanel(
-      selectInput("abs_intro", "Wing absorptivity", choices = seq(0.4, 0.7, 0.05)),
+      selectInput("abs_intro", "Wing absorptivity (proportion)", choices = seq(0.4, 0.7, 0.05)),
       selectInput("weather", "Weather", choices = c("Clear", "Partly cloudy", "Cloudy"))
     ),
     mainPanel(
@@ -100,9 +101,8 @@ shinyUI <- fluidPage(
                         sidebarLayout(
                           sidebarPanel(
                             h4(icon("map-marked-alt"), " Map"),
-                            p("This activity displays 4 fitness-related parameters of Colias in western Colorado. 
-                              The layer can be switched between 'data' and 'elevation' by clicking the button on the top, where 'data' shows the selected parameters and 'elevation' displays just the topography across the range.
-                              Clicking on the map gives you detailed data of the specific location."),
+                            p("Select an individual or population metric to plot. The layer can be switched between 'data' and the underlying 'elevation' by clicking the button on the top. Clicking 
+                              on the map gives you detailed data of the specific location. You can select the year, value of wind absorptivity, and generation (1 to 3) to plot"),
                             actionBttn(
                               inputId = "reset_map",
                               label = "Reset", 
@@ -122,11 +122,11 @@ shinyUI <- fluidPage(
                             div(
                               id = "metric-wrapper",
                               checkboxGroupInput("metric", "Metric to plot", 
-                                                 choices = c("Population growth rate", 
-                                                             "Flight activity time (s)", 
+                                                 choices = c("Population growth rate (lambda)", 
+                                                             "Flight activity time (h)", 
                                                              "   Egg viability (%)    ", 
                                                              "Body temperature (°C)"),
-                                                 selected = "Population growth rate")
+                                                 selected = "Population growth rate (lambda)")
                             ),
                             div(
                               id = "facet-wrapper",
@@ -134,7 +134,7 @@ shinyUI <- fluidPage(
                             ),
                             div(
                               id = "year-wrapper",
-                              sliderInput("year", "Year", min = 1950, max = 2099, value = 2020)
+                              sliderInput("year", "Year", min = 1950, max = 2099, value = 2020, sep = "")
                             ),
                             div(
                               id = "abs-wrapper",
@@ -163,8 +163,9 @@ shinyUI <- fluidPage(
                          sidebarLayout(
                            sidebarPanel(
                              h4(icon("chart-bar"), " Plot"),
-                             p("This activity visualizes 4 fitness-related parameters of Colias as a plot. 
-                               You can plot data across year or thier distributed elevation range, both of which can be colored and faceted by other variables by dragging", 
+                             p("Here you can visualize annual population growth rate (where 1= stable population and 2= population size doubling), 
+                             the hours of potential flight activity, egg viability (%), and mean body temperature (°C) 
+                               You can plot data across years or elevation, both of which can be colored and faceted by other variables by dragging", 
                                icon("glyphicon glyphicon-move", lib = "glyphicon"), "."),
                              actionBttn(
                                inputId = "reset_plot",
@@ -196,11 +197,11 @@ shinyUI <- fluidPage(
                                  
                                  ),
                                  checkboxGroupInput("yaxis", "Y axis", 
-                                                    choices = c("Population growth rate", 
-                                                                "Flight activity time (s)", 
+                                                    choices = c("Population growth rate (lambda)", 
+                                                                "Flight activity time (h)", 
                                                                 "   Egg viability (%)    ", 
                                                                 "Body temperature (°C)"),
-                                                    selected = "Population growth rate")
+                                                    selected = "Population growth rate (lambda)")
                                  
                                ),
                                column(5,
@@ -249,7 +250,7 @@ shinyUI <- fluidPage(
                                 uiOutput(outputId = 'widgetInput'),
                              div(
                                id = "variables-wrapper",
-                               selectInput("absPlot", "Wing absorptivity", choices = seq(0.4, 0.7, 0.05), selected = 0.4, multiple = TRUE),
+                               selectInput("absPlot", "Wing absorptivity (proportion)", choices = seq(0.4, 0.7, 0.05), selected = 0.4, multiple = TRUE),
                                selectInput("genPlot", "Generation", choices = c(1, 2, 3), selected = 1, multiple = TRUE)
                              ),
                              div(
