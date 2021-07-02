@@ -1,6 +1,6 @@
 # RShiny_ColiasModel
 
-RShiny_ColiasModel is an interactive shiny app that allows any user to visualize fitness-related variables such as operataive temperature and egg viability of Colias butterflies under varying wing absorptivity. This visualization is based on [Buckley and Kingsolver (2019)](https://onlinelibrary.wiley.com/doi/full/10.1111/geb.12953), and uses a future air temperature projection model from the CMIP5 multimodel ensemble. 
+RShiny_ColiasModel is an interactive shiny app that explores how wing absorptivity influences the body temperatures of butterflies and the consequences for butterfly populations. This visualization is based on [Buckley and Kingsolver (2019)](https://onlinelibrary.wiley.com/doi/full/10.1111/geb.12953), and uses a future air temperature projection model from the CMIP5 multimodel ensemble. 
 
 ## Prerequisites for opening in Rstudio
 Git and Rstudio ([Instructions](https://resources.github.com/whitepapers/github-and-rstudio/))  
